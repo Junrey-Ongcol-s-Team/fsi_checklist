@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="fsi_checklist.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Settings">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label FontSize="12" Text="Fire station name" />
+            <Entry Text="{Binding StationName}" />
+
+            <Label FontSize="12" Text="Fire station address" />
+            <Entry Text="{Binding StationAddress}" />
+
+            <Button
+                Margin="0,12,0,0"
+                Command="{Binding SaveCommand}"
+                CornerRadius="12"
+                HeightRequest="52"
+                Text="Save" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="fsi_checklist.Views.InspectionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:fsi_checklist.ViewModels"
+    Title="Inspections">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Command="{Binding OpenSettingsCommand}" Text="Settings" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Resources>
+        <!--  Filter chip: outlined by default, filled when selected (see triggers on each button)  -->
+        <Style x:Key="ChipStyle" TargetType="Button">
+            <Setter Property="HeightRequest" Value="36" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="Padding" Value="16,0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#BDBDBD, Dark=#5A5A5A}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!--  Search  -->
+        <SearchBar
+            Grid.Row="0"
+            Margin="4,4,4,0"
+            Placeholder="Search name, plate no. or reference no."
+            SearchCommand="{Binding LoadCommand}"
+            Text="{Binding SearchText}" />
+
+        <!--  Status filter  -->
+        <HorizontalStackLayout
+            Grid.Row="1"
+            Padding="12,4,12,10"
+            Spacing="8">
+            <Button
+                Command="{Binding SetFilterCommand}"
+                CommandParameter="ALL"
+                Style="{StaticResource ChipStyle}"
+                Text="All">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedFilter}"
+                        TargetType="Button"
+                        Value="ALL">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button
+                Command="{Binding SetFilterCommand}"
+                CommandParameter="DRAFT"
+                Style="{StaticResource ChipStyle}"
+                Text="Draft">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedFilter}"
+                        TargetType="Button"
+                        Value="DRAFT">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+            <Button
+                Command="{Binding SetFilterCommand}"
+                CommandParameter="COMPLETED"
+                Style="{StaticResource ChipStyle}"
+                Text="Completed">
+                <Button.Triggers>
+                    <DataTrigger
+                        Binding="{Binding SelectedFilter}"
+                        TargetType="Button"
+                        Value="COMPLETED">
+                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                        <Setter Property="TextColor" Value="White" />
+                    </DataTrigger>
+                </Button.Triggers>
+            </Button>
+        </HorizontalStackLayout>
+
+        <!--  List  -->
+        <RefreshView
+            Grid.Row="2"
+            Command="{Binding RefreshCommand}"
+            IsRefreshing="{Binding IsRefreshing}">
+            <CollectionView
+                Margin="12,0"
+                ItemsSource="{Binding Items}"
+                SelectionMode="None">
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout Padding="24,72" HorizontalOptions="Center">
+                        <Label
+                            FontSize="16"
+                            HorizontalTextAlignment="Center"
+                            Text="{Binding EmptyText}"
+                            TextColor="{AppThemeBinding Light=#616161,
+                                                        Dark=#B0B0B0}" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <SwipeView Margin="0,0,0,10">
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Reveal">
+                                    <SwipeItem
+                                        BackgroundColor="#C62828"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InspectionPageViewModel}}, Path=DeleteCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Text="Delete" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+
+                            <Border
+                                Padding="14,12"
+                                BackgroundColor="{AppThemeBinding Light=White,
+                                                                  Dark=#1E1E1E}"
+                                SemanticProperties.Description="{Binding AccessibilityText}"
+                                Stroke="{AppThemeBinding Light=#E0E0E0,
+                                                         Dark=#3C3C3C}"
+                                StrokeShape="RoundRectangle 12"
+                                StrokeThickness="1">
+                                <Border.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:InspectionPageViewModel}}, Path=OpenCommand}" CommandParameter="{Binding .}" />
+                                </Border.GestureRecognizers>
+
+                                <Grid
+                                    ColumnDefinitions="*,Auto"
+                                    ColumnSpacing="10"
+                                    RowDefinitions="Auto,Auto,Auto"
+                                    RowSpacing="2">
+
+                                    <Label
+                                        Grid.Row="0"
+                                        Grid.Column="0"
+                                        FontAttributes="Bold"
+                                        FontSize="16"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding SubjectName}" />
+
+                                    <!--  Status chip: text is always shown, so colour is never the only signal  -->
+                                    <Border
+                                        Grid.Row="0"
+                                        Grid.Column="1"
+                                        Padding="9,3"
+                                        BackgroundColor="#FFE08A"
+                                        StrokeShape="RoundRectangle 10"
+                                        StrokeThickness="0"
+                                        VerticalOptions="Start">
+                                        <Border.Triggers>
+                                            <DataTrigger
+                                                Binding="{Binding IsCompleted}"
+                                                TargetType="Border"
+                                                Value="True">
+                                                <Setter Property="BackgroundColor" Value="#A8E6B0" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label
+                                            FontSize="12"
+                                            Text="{Binding StatusText}"
+                                            TextColor="#1F1F1F" />
+                                    </Border>
+
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        FontSize="14"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding TemplateDisplayName}" />
+
+                                    <Label
+                                        Grid.Row="2"
+                                        Grid.ColumnSpan="2"
+                                        FontSize="12"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding DetailLine}"
+                                        TextColor="{AppThemeBinding Light=#616161,
+                                                                    Dark=#B0B0B0}" />
+                                </Grid>
+                            </Border>
+                        </SwipeView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <!--  Primary action  -->
+        <Button
+            Grid.Row="3"
+            Margin="12,8,12,12"
+            Command="{Binding NewInspectionCommand}"
+            CornerRadius="12"
+            FontAttributes="Bold"
+            HeightRequest="52"
+            Text="+  New inspection" />
+    </Grid>
+</ContentPage>

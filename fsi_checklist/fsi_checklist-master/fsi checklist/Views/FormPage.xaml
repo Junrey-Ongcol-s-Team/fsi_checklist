@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="fsi_checklist.Views.FormPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:views="clr-namespace:fsi_checklist.Views"
+    Title="{Binding Title}">
+
+    <ContentPage.Resources>
+
+        <Style x:Key="ChoiceChip" TargetType="Button">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#BDBDBD, Dark=#5A5A5A}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+        </Style>
+
+        <!--  Section header  -->
+        <DataTemplate x:Key="SectionTemplate">
+            <Label
+                Margin="0,14,0,2"
+                FontAttributes="Bold"
+                FontSize="18"
+                IsVisible="{Binding IsVisible}"
+                Text="{Binding Title}" />
+        </DataTemplate>
+
+        <!--  Answer slots  -->
+        <DataTemplate x:Key="TextSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Entry Placeholder="{Binding Hint}" Text="{Binding Text}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="LongTextSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Editor
+                    AutoSize="TextChanges"
+                    MinimumHeightRequest="80"
+                    Text="{Binding Text}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="NumberSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Entry
+                    Keyboard="Numeric"
+                    Placeholder="{Binding Hint}"
+                    Text="{Binding Text}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DateSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <HorizontalStackLayout Spacing="8">
+                    <DatePicker Date="{Binding DateValue}" IsVisible="{Binding HasDate}" />
+                    <Button
+                        Command="{Binding SetTodayCommand}"
+                        IsVisible="{Binding HasNoDate}"
+                        Text="Set date" />
+                    <Button
+                        Command="{Binding ClearDateCommand}"
+                        IsVisible="{Binding HasDate}"
+                        Text="Clear" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="BoolSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <CheckBox HorizontalOptions="Start" IsChecked="{Binding IsChecked}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="ChoiceSlot">
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <FlexLayout BindableLayout.ItemsSource="{Binding Options}" Wrap="Wrap">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,8,8"
+                                Command="{Binding SelectCommand}"
+                                Style="{StaticResource ChoiceChip}"
+                                Text="{Binding Label}">
+                                <Button.Triggers>
+                                    <DataTrigger
+                                        Binding="{Binding IsSelected}"
+                                        TargetType="Button"
+                                        Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="PhotoSlot">
+            <Label
+                FontAttributes="Italic"
+                FontSize="13"
+                Text="{Binding Hint}" />
+        </DataTemplate>
+
+        <views:SlotTemplateSelector
+            x:Key="SlotSelector"
+            BoolTemplate="{StaticResource BoolSlot}"
+            ChoiceTemplate="{StaticResource ChoiceSlot}"
+            DateTemplate="{StaticResource DateSlot}"
+            LongTextTemplate="{StaticResource LongTextSlot}"
+            NumberTemplate="{StaticResource NumberSlot}"
+            PhotoTemplate="{StaticResource PhotoSlot}"
+            TextTemplate="{StaticResource TextSlot}" />
+
+        <!--  Item card  -->
+        <DataTemplate x:Key="ItemTemplate">
+            <Border
+                Margin="{Binding Margin}"
+                Padding="12"
+                BackgroundColor="{AppThemeBinding Light=White,
+                                                  Dark=#1E1E1E}"
+                IsVisible="{Binding IsVisible}"
+                Stroke="{AppThemeBinding Light=#E0E0E0,
+                                         Dark=#3C3C3C}"
+                StrokeShape="RoundRectangle 10"
+                StrokeThickness="1">
+                <VerticalStackLayout Spacing="8">
+                    <Label FontSize="15" Text="{Binding LabelText}" />
+                    <Label
+                        FontSize="12"
+                        IsVisible="{Binding HasHelp}"
+                        Text="{Binding HelpText}" />
+                    <VerticalStackLayout
+                        BindableLayout.ItemTemplateSelector="{StaticResource SlotSelector}"
+                        BindableLayout.ItemsSource="{Binding Slots}"
+                        Spacing="8" />
+                </VerticalStackLayout>
+            </Border>
+        </DataTemplate>
+
+        <views:FormRowTemplateSelector
+            x:Key="RowSelector"
+            ItemTemplate="{StaticResource ItemTemplate}"
+            SectionTemplate="{StaticResource SectionTemplate}" />
+
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,*,Auto">
+
+        <Label
+            Grid.Row="0"
+            Padding="16,8"
+            FontAttributes="Bold"
+            Text="{Binding Subtitle}" />
+
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout
+                Padding="12,0,12,24"
+                BindableLayout.ItemTemplateSelector="{StaticResource RowSelector}"
+                BindableLayout.ItemsSource="{Binding Rows}"
+                Spacing="10" />
+        </ScrollView>
+
+        <ActivityIndicator
+            Grid.Row="1"
+            HorizontalOptions="Center"
+            IsRunning="{Binding IsBusy}"
+            IsVisible="{Binding IsBusy}"
+            VerticalOptions="Center" />
+
+        <Label
+            Grid.Row="2"
+            Padding="16,6"
+            FontSize="12"
+            HorizontalTextAlignment="End"
+            Text="{Binding SaveStatus}" />
+    </Grid>
+</ContentPage>

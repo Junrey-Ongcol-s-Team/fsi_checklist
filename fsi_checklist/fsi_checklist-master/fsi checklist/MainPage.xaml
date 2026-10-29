@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="fsi_checklist.MainPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:viewmodels="clr-namespace:fsi_checklist.ViewModels">
+
+    <ScrollView>
+        <VerticalStackLayout
+            Padding="30,60"
+            Spacing="25"
+            VerticalOptions="Center">
+
+            <Label
+                SemanticProperties.HeadingLevel="Level1"
+                Style="{StaticResource Headline}"
+                Text="Fire Safety Inspection" />
+
+            <Label
+                SemanticProperties.HeadingLevel="Level2"
+                Style="{StaticResource SubHeadline}"
+                Text="BFP inspection checklists" />
+
+            <Button
+                Command="{Binding OpenInspectionPageCommand}"
+                HorizontalOptions="Fill"
+                Text="Inspections" />
+            <Button
+                Command="{Binding OpenSettingsCommand}"
+                HorizontalOptions="Fill"
+                Text="Settings" />
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>
