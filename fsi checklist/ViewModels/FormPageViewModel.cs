@@ -225,7 +225,7 @@ public sealed partial class FormPageViewModel : ObservableObject
                     hint: $"Photos required: {slots}. Photo capture isn't available yet.");
 
             case "DATETIME":
-                return new SlotViewModel(itemId, slotKey, label, SlotKind.Text, hint: "yyyy-MM-dd HH:mm");
+                return new SlotViewModel(itemId, slotKey, label, SlotKind.DateTime);
 
             default: // TEXT and anything unknown
                 return new SlotViewModel(itemId, slotKey, label, SlotKind.Text);

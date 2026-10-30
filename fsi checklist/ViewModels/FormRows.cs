@@ -5,7 +5,7 @@ using fsi_checklist.Data.Models;
 
 namespace fsi_checklist.ViewModels;
 
-public enum SlotKind { Text, LongText, Number, Date, Bool, Choice, Photo }
+public enum SlotKind { Text, LongText, Number, Date, DateTime, Bool, Choice, Photo }
 
 public sealed partial class ChoiceOptionViewModel : ObservableObject
 {
@@ -57,6 +57,7 @@ public sealed partial class SlotViewModel : ObservableObject
     public string SlotKey { get; }
     public string? Label { get; }
     public bool HasLabel => !string.IsNullOrEmpty(Label);
+    public string Title => Label ?? Hint ?? "Answer";
     public SlotKind Kind { get; }
     public string? Hint { get; }
     public bool IsInteger { get; }
@@ -76,6 +77,9 @@ public sealed partial class SlotViewModel : ObservableObject
     private DateTime dateValue = DateTime.Today;
 
     [ObservableProperty]
+    private TimeSpan timeValue = DateTime.Now.TimeOfDay;
+
+    [ObservableProperty]
     private bool isChecked;
 
     public bool HasNoDate => !HasDate;
@@ -92,12 +96,14 @@ public sealed partial class SlotViewModel : ObservableObject
 
     partial void OnHasDateChanged(bool value) => NotifyChanged();
     partial void OnDateValueChanged(DateTime value) => NotifyChanged();
+    partial void OnTimeValueChanged(TimeSpan value) => NotifyChanged();
     partial void OnIsCheckedChanged(bool value) => NotifyChanged();
 
     [RelayCommand]
     private void SetToday() => Apply(() =>
     {
         DateValue = DateTime.Today;
+        TimeValue = DateTime.Now.TimeOfDay;
         HasDate = true;
     });
 
@@ -137,6 +143,11 @@ public sealed partial class SlotViewModel : ObservableObject
                     ? (DateValue.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), null)
                     : (null, null);
 
+            case SlotKind.DateTime:
+                return HasDate
+                    ? (DateValue.Date.Add(TimeValue).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), null)
+                    : (null, null);
+
             case SlotKind.Bool:
                 // Only a ticked box is stored; value_text '1' is what show_if rules compare against.
                 return IsChecked ? ("1", 1.0) : (null, null);
@@ -165,6 +176,16 @@ public sealed partial class SlotViewModel : ObservableObject
                             DateTimeStyles.None, out var date))
                     {
                         DateValue = date;
+                        HasDate = true;
+                    }
+                    break;
+
+                case SlotKind.DateTime:
+                    if (DateTime.TryParse(valueText, CultureInfo.InvariantCulture,
+                            DateTimeStyles.None, out var stamp))
+                    {
+                        DateValue = stamp.Date;
+                        TimeValue = stamp.TimeOfDay;
                         HasDate = true;
                     }
                     break;

@@ -20,9 +20,17 @@ public sealed partial class NewInspectionViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(SubjectLabel))]
+    [NotifyPropertyChangedFor(nameof(HasTemplateError))]
     private FormTemplate? selectedTemplate;
 
-    [ObservableProperty] private string subjectName = string.Empty;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNameError))]
+    private string subjectName = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasNameError))]
+    [NotifyPropertyChangedFor(nameof(HasTemplateError))]
+    private bool showErrors;
     [ObservableProperty] private string address = string.Empty;
     [ObservableProperty] private string ownerName = string.Empty;
     [ObservableProperty] private string contactNo = string.Empty;
@@ -30,6 +38,9 @@ public sealed partial class NewInspectionViewModel : ObservableObject
     [ObservableProperty] private DateTime dateInspected = DateTime.Today;
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private bool hasNoTemplates;
+
+    public bool HasNameError => ShowErrors && string.IsNullOrWhiteSpace(SubjectName);
+    public bool HasTemplateError => ShowErrors && SelectedTemplate == null;
 
     public string SubjectLabel => SelectedTemplate?.SubjectType switch
     {
@@ -63,17 +74,9 @@ public sealed partial class NewInspectionViewModel : ObservableObject
     [RelayCommand]
     private async Task CreateAsync()
     {
-        if (SelectedTemplate == null)
-        {
-            await Dialogs.ShowAsync("Choose a checklist", "Pick which checklist you're filling in.");
+        ShowErrors = true;
+        if (SelectedTemplate == null || string.IsNullOrWhiteSpace(SubjectName))
             return;
-        }
-
-        if (string.IsNullOrWhiteSpace(SubjectName))
-        {
-            await Dialogs.ShowAsync("Missing name", $"Enter the {SubjectLabel.ToLowerInvariant()}.");
-            return;
-        }
 
         IsBusy = true;
         try

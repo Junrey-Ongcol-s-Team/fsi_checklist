@@ -4,6 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:fsi_checklist.Views"
+    xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
     Title="{Binding Title}">
 
     <ContentPage.Resources>
@@ -31,69 +32,99 @@
 
         <!--  Answer slots  -->
         <DataTemplate x:Key="TextSlot">
-            <VerticalStackLayout Spacing="2">
-                <Label
-                    FontSize="12"
-                    IsVisible="{Binding HasLabel}"
-                    Text="{Binding Label}" />
-                <Entry Placeholder="{Binding Hint}" Text="{Binding Text}" />
-            </VerticalStackLayout>
+            <material:TextField Title="{Binding Title}" Text="{Binding Text}" />
         </DataTemplate>
 
         <DataTemplate x:Key="LongTextSlot">
-            <VerticalStackLayout Spacing="2">
-                <Label
-                    FontSize="12"
-                    IsVisible="{Binding HasLabel}"
-                    Text="{Binding Label}" />
-                <Editor
-                    AutoSize="TextChanges"
-                    MinimumHeightRequest="80"
-                    Text="{Binding Text}" />
-            </VerticalStackLayout>
+            <material:EditorField Title="{Binding Title}" Text="{Binding Text}" />
         </DataTemplate>
 
         <DataTemplate x:Key="NumberSlot">
-            <VerticalStackLayout Spacing="2">
-                <Label
-                    FontSize="12"
-                    IsVisible="{Binding HasLabel}"
-                    Text="{Binding Label}" />
-                <Entry
-                    Keyboard="Numeric"
-                    Placeholder="{Binding Hint}"
-                    Text="{Binding Text}" />
-            </VerticalStackLayout>
+            <material:TextField
+                Title="{Binding Title}"
+                Keyboard="Numeric"
+                Text="{Binding Text}" />
         </DataTemplate>
 
         <DataTemplate x:Key="DateSlot">
-            <VerticalStackLayout Spacing="2">
+            <VerticalStackLayout Spacing="4">
                 <Label
                     FontSize="12"
                     IsVisible="{Binding HasLabel}"
                     Text="{Binding Label}" />
-                <HorizontalStackLayout Spacing="8">
-                    <DatePicker Date="{Binding DateValue}" IsVisible="{Binding HasDate}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <material:DatePickerField
+                        Title="Date"
+                        Date="{Binding DateValue}"
+                        IsVisible="{Binding HasDate}" />
                     <Button
+                        Grid.Column="0"
                         Command="{Binding SetTodayCommand}"
                         IsVisible="{Binding HasNoDate}"
-                        Text="Set date" />
+                        Style="{StaticResource SmallButton}"
+                        Text="Pick a date" />
                     <Button
+                        Grid.Column="1"
+                        BackgroundColor="Transparent"
+                        BorderColor="{AppThemeBinding Light=#BDBDBD,
+                                                      Dark=#5A5A5A}"
+                        BorderWidth="1"
                         Command="{Binding ClearDateCommand}"
                         IsVisible="{Binding HasDate}"
-                        Text="Clear" />
-                </HorizontalStackLayout>
+                        Style="{StaticResource SmallButton}"
+                        Text="Clear"
+                        TextColor="{AppThemeBinding Light=#424242,
+                                                    Dark=#E0E0E0}" />
+                </Grid>
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DateTimeSlot">
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Grid
+                    ColumnDefinitions="*,*,Auto"
+                    ColumnSpacing="8"
+                    IsVisible="{Binding HasDate}">
+                    <material:DatePickerField
+                        Title="Date"
+                        Date="{Binding DateValue}" />
+                    <material:TimePickerField
+                        Title="Time"
+                        Grid.Column="1"
+                        Time="{Binding TimeValue}" />
+                    <Button
+                        Grid.Column="2"
+                        BackgroundColor="Transparent"
+                        BorderColor="{AppThemeBinding Light=#BDBDBD,
+                                                      Dark=#5A5A5A}"
+                        BorderWidth="1"
+                        Command="{Binding ClearDateCommand}"
+                        Style="{StaticResource SmallButton}"
+                        Text="Clear"
+                        TextColor="{AppThemeBinding Light=#424242,
+                                                    Dark=#E0E0E0}" />
+                </Grid>
+                <Button
+                    Command="{Binding SetTodayCommand}"
+                    HorizontalOptions="Start"
+                    IsVisible="{Binding HasNoDate}"
+                    Style="{StaticResource SmallButton}"
+                    Text="Pick date and time" />
             </VerticalStackLayout>
         </DataTemplate>
 
         <DataTemplate x:Key="BoolSlot">
-            <VerticalStackLayout Spacing="2">
+            <HorizontalStackLayout Spacing="8">
+                <CheckBox IsChecked="{Binding IsChecked}" VerticalOptions="Center" />
                 <Label
-                    FontSize="12"
                     IsVisible="{Binding HasLabel}"
-                    Text="{Binding Label}" />
-                <CheckBox HorizontalOptions="Start" IsChecked="{Binding IsChecked}" />
-            </VerticalStackLayout>
+                    Text="{Binding Label}"
+                    VerticalOptions="Center" />
+            </HorizontalStackLayout>
         </DataTemplate>
 
         <DataTemplate x:Key="ChoiceSlot">
@@ -139,6 +170,7 @@
             BoolTemplate="{StaticResource BoolSlot}"
             ChoiceTemplate="{StaticResource ChoiceSlot}"
             DateTemplate="{StaticResource DateSlot}"
+            DateTimeTemplate="{StaticResource DateTimeSlot}"
             LongTextTemplate="{StaticResource LongTextSlot}"
             NumberTemplate="{StaticResource NumberSlot}"
             PhotoTemplate="{StaticResource PhotoSlot}"

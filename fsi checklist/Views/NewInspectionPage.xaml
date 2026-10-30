@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="fsi_checklist.Views.NewInspectionPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
+    Title="New inspection">
+
+    <Grid RowDefinitions="*,Auto">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Padding="16,12" Spacing="16">
+
+                <Label
+                    IsVisible="{Binding HasNoTemplates}"
+                    Style="{StaticResource FieldError}"
+                    Text="No checklists are installed yet. Add a form seed script to make one available here." />
+
+                <!--  Checklist  -->
+                <VerticalStackLayout Spacing="4">
+                    <material:PickerField
+                        Title="Checklist *"
+                        ItemsSource="{Binding Templates}"
+                        SelectedItem="{Binding SelectedTemplate}" />
+                    <Label
+                        IsVisible="{Binding HasTemplateError}"
+                        Style="{StaticResource FieldError}"
+                        Text="Choose a checklist." />
+                </VerticalStackLayout>
+
+                <!--  Name / plate / project  -->
+                <VerticalStackLayout Spacing="4">
+                    <material:TextField
+                        Title="{Binding SubjectLabel, StringFormat='{0} *'}"
+                        Text="{Binding SubjectName}" />
+                    <Label
+                        IsVisible="{Binding HasNameError}"
+                        Style="{StaticResource FieldError}"
+                        Text="This field is required." />
+                </VerticalStackLayout>
+
+                <!--  Address  -->
+                <material:TextField
+                    Title="Address"
+                    Text="{Binding Address}" />
+
+                <!--  Owner  -->
+                <material:TextField
+                    Title="Owner / representative"
+                    Text="{Binding OwnerName}" />
+
+                <!--  Contact  -->
+                <material:TextField
+                    Title="Contact number"
+                    Keyboard="Telephone"
+                    Text="{Binding ContactNo}" />
+
+                <!--  Reference no.  -->
+                <material:TextField
+                    Title="Inspection order / control no."
+                    Text="{Binding ReferenceNo}" />
+
+                <!--  Date  -->
+                <material:DatePickerField Title="Date inspected" Date="{Binding DateInspected}" />
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button
+            Grid.Row="1"
+            Margin="16,8,16,16"
+            Command="{Binding CreateCommand}"
+            CornerRadius="12"
+            FontAttributes="Bold"
+            HeightRequest="52"
+            Text="Start inspection" />
+    </Grid>
+</ContentPage>

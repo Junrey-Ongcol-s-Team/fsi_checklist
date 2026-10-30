@@ -19,6 +19,8 @@ public sealed class FormTemplate
     public string? Purpose { get; set; }
     public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;
+
+    public override string ToString() => DisplayName;
 }
 
 [Table("form_section")]

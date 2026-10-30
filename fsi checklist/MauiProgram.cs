@@ -1,4 +1,5 @@
 using CommunityToolkit.Maui;
+using UraniumUI;
 using fsi_checklist.Data;
 using fsi_checklist.Services;
 using fsi_checklist.ViewModels;
@@ -16,6 +17,8 @@ namespace fsi_checklist
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseUraniumUI()
+                .UseUraniumUIMaterial()
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");

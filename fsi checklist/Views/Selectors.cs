@@ -17,6 +17,7 @@ public sealed class SlotTemplateSelector : DataTemplateSelector
     public DataTemplate? LongTextTemplate { get; set; }
     public DataTemplate? NumberTemplate { get; set; }
     public DataTemplate? DateTemplate { get; set; }
+    public DataTemplate? DateTimeTemplate { get; set; }
     public DataTemplate? BoolTemplate { get; set; }
     public DataTemplate? ChoiceTemplate { get; set; }
     public DataTemplate? PhotoTemplate { get; set; }
@@ -28,6 +29,7 @@ public sealed class SlotTemplateSelector : DataTemplateSelector
             SlotKind.LongText => LongTextTemplate,
             SlotKind.Number => NumberTemplate,
             SlotKind.Date => DateTemplate,
+            SlotKind.DateTime => DateTimeTemplate,
             SlotKind.Bool => BoolTemplate,
             SlotKind.Choice => ChoiceTemplate,
             SlotKind.Photo => PhotoTemplate,
