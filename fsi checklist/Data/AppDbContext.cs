@@ -1,3 +1,7 @@
+// =====================================================================
+// Ang AppDbContext: ang 'tulay' tali sa C# ug sa SQLite database (EF Core).
+// Matag DbSet = usa ka table nga magamit sa C#. Ang ngalan sa column gi-convert ngadto sa snake_case (pananglitan DisplayName -> display_name).
+// =====================================================================
 using System.Text;
 using fsi_checklist.Data.Models;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +24,10 @@ namespace fsi_checklist.Data
         public DbSet<Inspection> Inspections => Set<Inspection>();
         public DbSet<InspectionAnswer> InspectionAnswers => Set<InspectionAnswer>();
         public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+        public DbSet<SignatoryRole> SignatoryRoles => Set<SignatoryRole>();
+        public DbSet<FormTemplateSignatory> FormTemplateSignatories => Set<FormTemplateSignatory>();
+        public DbSet<InspectionSignatory> InspectionSignatories => Set<InspectionSignatory>();
+        public DbSet<Attachment> Attachments => Set<Attachment>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +36,9 @@ namespace fsi_checklist.Data
                 e.HasOne(i => i.Subject).WithMany().HasForeignKey(i => i.SubjectId);
                 e.HasOne(i => i.Template).WithMany().HasForeignKey(i => i.TemplateId);
             });
+
+            modelBuilder.Entity<FormTemplateSignatory>()
+                .HasKey(x => new { x.TemplateId, x.RoleCode });
 
             // schema.sql uses snake_case column names.
             foreach (var entity in modelBuilder.Model.GetEntityTypes())

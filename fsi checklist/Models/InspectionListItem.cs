@@ -1,3 +1,6 @@
+// =====================================================================
+// Usa ka row sa DAAN nga listahan (InspectionPage). Ang bag-ong dashboard naggamit na sa DashboardRow.
+// =====================================================================
 namespace fsi_checklist.Models;
 
 public sealed class InspectionListItem

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    VIEW RESULTS: ang tibuok gi-fill-up nga checklist (basa ra), seksyon por seksyon, uban ang mga pirma.
+-->
+<ContentPage
+    x:Class="fsi_checklist.Views.ResultsPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Results">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!--  ULOHAN: owner, form, detalye, status  -->
+        <VerticalStackLayout
+            Grid.Row="0"
+            Padding="16,8,16,10"
+            Spacing="2">
+            <Label
+                FontAttributes="Bold"
+                FontSize="22"
+                Text="{Binding OwnerName}" />
+            <Label FontSize="14" Text="{Binding FormName}" />
+            <Label
+                FontSize="12"
+                Text="{Binding DetailLine}"
+                TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+            <Label
+                Margin="0,4,0,0"
+                FontAttributes="Bold"
+                FontSize="13"
+                Text="{Binding StatusText}" />
+        </VerticalStackLayout>
+
+        <!--  ANG MGA TUBAG: CollectionView aron paspas bisan daghan og pangutana  -->
+        <CollectionView
+            Grid.Row="1"
+            Margin="12,0"
+            ItemsSource="{Binding Rows}"
+            SelectionMode="None">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid Padding="0,0,0,8">
+
+                        <!--  Ulohan sa seksyon  -->
+                        <Label
+                            Margin="0,12,0,0"
+                            FontAttributes="Bold"
+                            FontSize="18"
+                            IsVisible="{Binding IsSection}"
+                            Text="{Binding Title}" />
+
+                        <!--  Usa ka pangutana ug ang tubag  -->
+                        <Border
+                            Margin="{Binding Margin}"
+                            Padding="12,10"
+                            BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                            IsVisible="{Binding IsItem}"
+                            Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
+                            StrokeShape="RoundRectangle 10"
+                            StrokeThickness="1">
+                            <Border.Triggers>
+                                <!--  Dilaw nga frame kung wala'y tubag  -->
+                                <DataTrigger
+                                    Binding="{Binding IsUnanswered}"
+                                    TargetType="Border"
+                                    Value="True">
+                                    <Setter Property="Stroke" Value="#F9A825" />
+                                </DataTrigger>
+                            </Border.Triggers>
+                            <VerticalStackLayout Spacing="4">
+                                <Label FontSize="14" Text="{Binding Title}" />
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Text="{Binding Answer}" />
+                                <!--  Mga litrato sa pangutana  -->
+                                <FlexLayout
+                                    BindableLayout.ItemsSource="{Binding PhotoPaths}"
+                                    IsVisible="{Binding HasPhotos}"
+                                    Wrap="Wrap">
+                                    <BindableLayout.ItemTemplate>
+                                        <DataTemplate>
+                                            <!--  I-tap ang litrato para makita og dako  -->
+                                            <Image
+                                                Margin="0,0,8,8"
+                                                Aspect="AspectFill"
+                                                HeightRequest="120"
+                                                Source="{Binding .}"
+                                                WidthRequest="120">
+                                                <Image.GestureRecognizers>
+                                                    <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                                </Image.GestureRecognizers>
+                                            </Image>
+                                        </DataTemplate>
+                                    </BindableLayout.ItemTemplate>
+                                </FlexLayout>
+                                <!--  Hulagway sa pirma (para sa Signatures ra)  -->
+                                <GraphicsView
+                                    Drawable="{Binding Signature}"
+                                    HeightRequest="70"
+                                    IsVisible="{Binding HasSignature}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <ActivityIndicator
+            Grid.Row="1"
+            HorizontalOptions="Center"
+            IsRunning="{Binding IsBusy}"
+            IsVisible="{Binding IsBusy}"
+            VerticalOptions="Center" />
+    </Grid>
+</ContentPage>

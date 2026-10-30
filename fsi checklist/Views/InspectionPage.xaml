@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--
+    DAAN nga listahan (dili na gigamit).
+-->
 <ContentPage
     x:Class="fsi_checklist.Views.InspectionPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"

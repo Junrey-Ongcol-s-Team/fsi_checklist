@@ -1,76 +1,59 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Page sa pagsulod sa detalye sa bag-ong inspection.
+-->
 <ContentPage
     x:Class="fsi_checklist.Views.NewInspectionPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
     Title="New inspection">
 
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="16,12" Spacing="16">
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
 
-                <Label
-                    IsVisible="{Binding HasNoTemplates}"
-                    Style="{StaticResource FieldError}"
-                    Text="No checklists are installed yet. Add a form seed script to make one available here." />
+            <Label
+                IsVisible="{Binding HasNoTemplates}"
+                Text="No checklists are installed yet. Add a form seed script to make one available here." />
 
-                <!--  Checklist  -->
-                <VerticalStackLayout Spacing="4">
-                    <material:PickerField
-                        Title="Checklist *"
-                        ItemsSource="{Binding Templates}"
-                        SelectedItem="{Binding SelectedTemplate}" />
-                    <Label
-                        IsVisible="{Binding HasTemplateError}"
-                        Style="{StaticResource FieldError}"
-                        Text="Choose a checklist." />
-                </VerticalStackLayout>
+            <Label
+                FontAttributes="Bold"
+                FontSize="20"
+                IsVisible="{Binding IsTemplateFixed}"
+                Text="{Binding SelectedTemplate.DisplayName}" />
 
-                <!--  Name / plate / project  -->
-                <VerticalStackLayout Spacing="4">
-                    <material:TextField
-                        Title="{Binding SubjectLabel, StringFormat='{0} *'}"
-                        Text="{Binding SubjectName}" />
-                    <Label
-                        IsVisible="{Binding HasNameError}"
-                        Style="{StaticResource FieldError}"
-                        Text="This field is required." />
-                </VerticalStackLayout>
+            <Label FontSize="12" IsVisible="{Binding ShowPicker}" Text="Checklist" />
+            <Picker
+                Title="Choose a checklist"
+                IsVisible="{Binding ShowPicker}"
+                ItemDisplayBinding="{Binding DisplayName}"
+                ItemsSource="{Binding Templates}"
+                SelectedItem="{Binding SelectedTemplate}" />
 
-                <!--  Address  -->
-                <material:TextField
-                    Title="Address"
-                    Text="{Binding Address}" />
+            <Label FontSize="12" Text="{Binding SubjectLabel}" />
+            <Entry Text="{Binding SubjectName}" />
 
-                <!--  Owner  -->
-                <material:TextField
-                    Title="Owner / representative"
-                    Text="{Binding OwnerName}" />
+            <Label FontSize="12" Text="Address" />
+            <Entry Text="{Binding Address}" />
 
-                <!--  Contact  -->
-                <material:TextField
-                    Title="Contact number"
-                    Keyboard="Telephone"
-                    Text="{Binding ContactNo}" />
+            <Label FontSize="12" Text="Owner / representative" />
+            <Entry Text="{Binding OwnerName}" />
 
-                <!--  Reference no.  -->
-                <material:TextField
-                    Title="Inspection order / control no."
-                    Text="{Binding ReferenceNo}" />
+            <Label FontSize="12" Text="Contact number" />
+            <Entry Keyboard="Telephone" Text="{Binding ContactNo}" />
 
-                <!--  Date  -->
-                <material:DatePickerField Title="Date inspected" Date="{Binding DateInspected}" />
-            </VerticalStackLayout>
-        </ScrollView>
+            <Label FontSize="12" Text="Inspection order / control no." />
+            <Entry Text="{Binding ReferenceNo}" />
 
-        <Button
-            Grid.Row="1"
-            Margin="16,8,16,16"
-            Command="{Binding CreateCommand}"
-            CornerRadius="12"
-            FontAttributes="Bold"
-            HeightRequest="52"
-            Text="Start inspection" />
-    </Grid>
+            <Label FontSize="12" Text="Date inspected" />
+            <DatePicker Date="{Binding DateInspected}" />
+
+            <Button
+                Margin="0,12,0,0"
+                Command="{Binding CreateCommand}"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                HeightRequest="52"
+                Text="Start inspection" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

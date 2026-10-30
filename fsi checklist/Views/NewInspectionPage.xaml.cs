@@ -1,3 +1,6 @@
+// =====================================================================
+// Code-behind: i-load ang mga checklist pag-abli sa page.
+// =====================================================================
 using fsi_checklist.ViewModels;
 
 namespace fsi_checklist.Views;

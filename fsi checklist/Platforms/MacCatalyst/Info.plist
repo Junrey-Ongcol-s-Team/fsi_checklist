@@ -53,5 +53,9 @@
 	</dict>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos for the inspection checklist.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Choose photos for the inspection checklist.</string>
 </dict>
 </plist>

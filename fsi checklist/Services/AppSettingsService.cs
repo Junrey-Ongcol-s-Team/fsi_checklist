@@ -1,3 +1,6 @@
+// =====================================================================
+// Basahon ug i-save ang mga setting sa app (pananglitan ngalan sa istasyon) sa table nga app_setting.
+// =====================================================================
 using fsi_checklist.Data.Models;
 using Microsoft.EntityFrameworkCore;
 

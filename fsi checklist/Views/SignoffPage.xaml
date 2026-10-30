@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    SIGN-OFF page: progress, mga linya sa pirma (sa inspection ug sa opisina), ug ang 'Complete inspection'.
+-->
+<ContentPage
+    x:Class="fsi_checklist.Views.SignoffPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:fsi_checklist.ViewModels"
+    Title="Sign-off">
+
+    <ContentPage.Resources>
+        <!--  DISENYO SA USA KA LINYA SA PIRMA: role, status, ngalan ug oras, ug ang pirma o ang Sign button  -->
+        <DataTemplate x:Key="SignatoryTemplate">
+            <Border
+                Padding="12"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
+                StrokeShape="RoundRectangle 12"
+                StrokeThickness="1">
+                <Grid
+                    ColumnDefinitions="*,Auto"
+                    RowDefinitions="Auto,Auto,Auto"
+                    RowSpacing="4">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="15"
+                        Text="{Binding RoleLabel}" />
+                    <Border
+                        Grid.Column="1"
+                        Padding="9,3"
+                        BackgroundColor="{Binding StatusColor}"
+                        StrokeShape="RoundRectangle 10"
+                        StrokeThickness="0">
+                        <Label
+                            FontSize="12"
+                            Text="{Binding StatusText}"
+                            TextColor="#1F1F1F" />
+                    </Border>
+                    <Label
+                        Grid.Row="1"
+                        Grid.ColumnSpan="2"
+                        FontSize="12"
+                        Text="{Binding DetailText}"
+                        TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+                    <GraphicsView
+                        Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        Drawable="{Binding Preview}"
+                        HeightRequest="70"
+                        IsVisible="{Binding IsSigned}" />
+                    <Button
+                        Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        Clicked="OnSignClicked"
+                        IsVisible="{Binding ShowSignButton}"
+                        Text="Sign" />
+                    <Label
+                        Grid.Row="2"
+                        Grid.ColumnSpan="2"
+                        FontSize="12"
+                        IsVisible="{Binding HasReason}"
+                        Text="{Binding Reason}"
+                        TextColor="#C62828" />
+                </Grid>
+            </Border>
+        </DataTemplate>
+    </ContentPage.Resources>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="22"
+                Text="{Binding Title}" />
+            <Label Text="{Binding Subtitle}" />
+
+            <Border
+                Padding="12"
+                BackgroundColor="{AppThemeBinding Light=#F1F1F1, Dark=#2A2A2A}"
+                StrokeShape="RoundRectangle 12"
+                StrokeThickness="0">
+                <VerticalStackLayout Spacing="6">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="15"
+                        Text="{Binding StateText}" />
+                    <ProgressBar Progress="{Binding ProgressFraction}" ProgressColor="{Binding ProgressColor}" />
+                    <Label FontSize="12" Text="{Binding ProgressText}" />
+                    <!--  VIEW RESULTS: ang tibuok checklist nga basa ra  -->
+                    <Button Command="{Binding ViewResultsCommand}" Text="View results" />
+                    <Button
+                        Command="{Binding EditFormCommand}"
+                        IsVisible="{Binding CanEditForm}"
+                        Text="Review / edit the form" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Label Text="{Binding Hint}" />
+
+            <!--  Mga pirma sa inspection (Owner, Inspector, Team Leader)  -->
+            <Label
+                FontAttributes="Bold"
+                FontSize="18"
+                Text="Signatures at the inspection" />
+            <VerticalStackLayout
+                BindableLayout.ItemTemplate="{StaticResource SignatoryTemplate}"
+                BindableLayout.ItemsSource="{Binding OnSite}"
+                Spacing="10" />
+
+            <Label
+                FontAttributes="Bold"
+                FontSize="18"
+                IsVisible="{Binding HasApproval}"
+                Text="Approval (at the office)" />
+            <VerticalStackLayout
+                BindableLayout.ItemTemplate="{StaticResource SignatoryTemplate}"
+                BindableLayout.ItemsSource="{Binding Approval}"
+                Spacing="10" />
+
+            <!--  COMPLETE: i-lock ang inspection  -->
+            <Button
+                Command="{Binding CompleteCommand}"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                HeightRequest="52"
+                IsEnabled="{Binding CanComplete}"
+                Text="Complete inspection" />
+
+            <Button Command="{Binding BackToDashboardCommand}" Text="Back to inspections" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

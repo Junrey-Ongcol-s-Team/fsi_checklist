@@ -1,3 +1,10 @@
+// =====================================================================
+// Ang mga piyesa sa form:
+//   SlotViewModel        = usa ka tubag (text, numero, petsa, Yes/No...) = usa ka row sa inspection_answer
+//   ChoiceOptionViewModel= usa ka chip (pananglitan 'Yes')
+//   SectionRowViewModel  = ulohan sa seksyon
+//   ItemRowViewModel     = usa ka pangutana (card) nga naay usa o daghang slot
+// =====================================================================
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -5,7 +12,7 @@ using fsi_checklist.Data.Models;
 
 namespace fsi_checklist.ViewModels;
 
-public enum SlotKind { Text, LongText, Number, Date, DateTime, Bool, Choice, Photo }
+public enum SlotKind { Text, LongText, Number, Date, Bool, Choice, Photo }
 
 public sealed partial class ChoiceOptionViewModel : ObservableObject
 {
@@ -57,7 +64,6 @@ public sealed partial class SlotViewModel : ObservableObject
     public string SlotKey { get; }
     public string? Label { get; }
     public bool HasLabel => !string.IsNullOrEmpty(Label);
-    public string Title => Label ?? Hint ?? "Answer";
     public SlotKind Kind { get; }
     public string? Hint { get; }
     public bool IsInteger { get; }
@@ -77,9 +83,6 @@ public sealed partial class SlotViewModel : ObservableObject
     private DateTime dateValue = DateTime.Today;
 
     [ObservableProperty]
-    private TimeSpan timeValue = DateTime.Now.TimeOfDay;
-
-    [ObservableProperty]
     private bool isChecked;
 
     public bool HasNoDate => !HasDate;
@@ -96,20 +99,19 @@ public sealed partial class SlotViewModel : ObservableObject
 
     partial void OnHasDateChanged(bool value) => NotifyChanged();
     partial void OnDateValueChanged(DateTime value) => NotifyChanged();
-    partial void OnTimeValueChanged(TimeSpan value) => NotifyChanged();
     partial void OnIsCheckedChanged(bool value) => NotifyChanged();
 
     [RelayCommand]
     private void SetToday() => Apply(() =>
     {
         DateValue = DateTime.Today;
-        TimeValue = DateTime.Now.TimeOfDay;
         HasDate = true;
     });
 
     [RelayCommand]
     private void ClearDate() => Apply(() => HasDate = false);
 
+    // Pag-tap sa napili na nga chip: i-clear ang tubag.
     /// <summary>Tapping the selected option again clears the answer.</summary>
     public void Toggle(string value) => Text = Text == value ? null : value;
 
@@ -127,6 +129,7 @@ public sealed partial class SlotViewModel : ObservableObject
             Changed?.Invoke(this);
     }
 
+    // Unsa ang i-save sa database para niini nga tubag (value_text / value_num). Kung parehas null = wala'y tubag.
     /// <summary>What goes into value_text / value_num for this slot (both null = no answer).</summary>
     public (string? Text, double? Num) GetStored()
     {
@@ -143,11 +146,6 @@ public sealed partial class SlotViewModel : ObservableObject
                     ? (DateValue.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture), null)
                     : (null, null);
 
-            case SlotKind.DateTime:
-                return HasDate
-                    ? (DateValue.Date.Add(TimeValue).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture), null)
-                    : (null, null);
-
             case SlotKind.Bool:
                 // Only a ticked box is stored; value_text '1' is what show_if rules compare against.
                 return IsChecked ? ("1", 1.0) : (null, null);
@@ -160,6 +158,7 @@ public sealed partial class SlotViewModel : ObservableObject
         }
     }
 
+    // Ibutang balik sa screen ang tubag nga gikan sa database.
     public void LoadFrom(string? valueText, double? valueNum)
     {
         _suppress = true;
@@ -176,16 +175,6 @@ public sealed partial class SlotViewModel : ObservableObject
                             DateTimeStyles.None, out var date))
                     {
                         DateValue = date;
-                        HasDate = true;
-                    }
-                    break;
-
-                case SlotKind.DateTime:
-                    if (DateTime.TryParse(valueText, CultureInfo.InvariantCulture,
-                            DateTimeStyles.None, out var stamp))
-                    {
-                        DateValue = stamp.Date;
-                        TimeValue = stamp.TimeOfDay;
                         HasDate = true;
                     }
                     break;
@@ -209,6 +198,40 @@ public sealed partial class SlotViewModel : ObservableObject
     }
 }
 
+/// <summary>Usa ka litrato nga makita sa form (gamay nga hulagway).</summary>
+public sealed class PhotoViewModel
+{
+    public PhotoViewModel(PhotoSlotViewModel slot, string id, string fullPath)
+    {
+        Slot = slot;
+        Id = id;
+        FullPath = fullPath;
+    }
+
+    public PhotoSlotViewModel Slot { get; }
+    public string Id { get; }
+    public string FullPath { get; }   // gamiton sa Image (Source)
+}
+
+/// <summary>
+/// Usa ka lugar sa litrato sa pangutana. Pananglitan sa 064: "Front", "Rear", "Side".
+/// Para sa Defects: usa ra ka lugar nga "Photos".
+/// </summary>
+public sealed class PhotoSlotViewModel
+{
+    public PhotoSlotViewModel(string itemId, string? tag, string label)
+    {
+        ItemId = itemId;
+        Tag = tag;
+        Label = label;
+    }
+
+    public string ItemId { get; }
+    public string? Tag { get; }
+    public string Label { get; }
+    public System.Collections.ObjectModel.ObservableCollection<PhotoViewModel> Photos { get; } = new();
+}
+
 public abstract partial class FormRowViewModel : ObservableObject
 {
     [ObservableProperty]
@@ -226,7 +249,7 @@ public sealed class SectionRowViewModel : FormRowViewModel
     public string Title => Section.Title;
 }
 
-public sealed class ItemRowViewModel : FormRowViewModel
+public sealed partial class ItemRowViewModel : FormRowViewModel
 {
     public ItemRowViewModel(FormItem item, IReadOnlyList<SlotViewModel> slots, int depth)
     {
@@ -241,4 +264,12 @@ public sealed class ItemRowViewModel : FormRowViewModel
     public string LabelText => Item.IsRequired ? $"{Item.Label} *" : Item.Label;
     public string? HelpText => Item.HelpText;
     public bool HasHelp => !string.IsNullOrWhiteSpace(Item.HelpText);
+
+    // Mga lugar sa litrato (walay sulod kung dili kinahanglan og litrato ang pangutana).
+    public List<PhotoSlotViewModel> PhotoSlots { get; } = new();
+    public bool HasPhotoSlots => PhotoSlots.Count > 0;
+
+    // Shown with a yellow frame after the user taps "Next missing".
+    [ObservableProperty]
+    private bool isMissing;
 }

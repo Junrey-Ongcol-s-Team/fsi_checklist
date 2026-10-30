@@ -1,4 +1,13 @@
 -- =====================================================================
+-- SCHEMA (disenyo sa tibuok database). Bisaya nga pasabot:
+--   A. FORM DEFINITION  = unsa ang sulod sa matag form (template, section, item, column, choice)
+--   B. RECORDING        = ang mga inspection ug tubag (subject, inspection, inspection_answer,
+--                         inspection_signatory = pirma, attachment = litrato)
+--   C. INTEGRITY        = mga trigger: dili na mausab ang tubag kung COMPLETED na
+--   D. SEED             = mga default nga data (column sets, roles, ug ang 4 ka form header)
+-- Kini modagan KAUSA RA (inig himo sa database). Kung usbon nimo kini, i-delete ang bfp_inspection.db3.
+-- =====================================================================
+-- =====================================================================
 -- BFP Fire Safety Inspection App  --  FINAL SQLite schema
 -- Stack: .NET MAUI + SQLite (sqlite-net)
 --
@@ -285,6 +294,16 @@ WHERE r.stage = 'ON_SITE' AND r.is_required = 1
         WHERE s.inspection_id = i.id AND s.role_code = r.role_code
           AND s.status IN ('SIGNED','REFUSED')) < r.min_count;
 
+-- Quick look at every form: which one it is, and whether its questions are loaded
+CREATE VIEW v_form_overview AS
+SELECT t.id AS template_id, t.code, t.display_name, t.subject_type, t.purpose, t.revision,
+       (SELECT COUNT(*) FROM form_section s WHERE s.template_id = t.id) AS sections,
+       (SELECT COUNT(*) FROM form_item i WHERE i.template_id = t.id) AS items,
+       CASE WHEN EXISTS (SELECT 1 FROM form_item i WHERE i.template_id = t.id)
+            THEN 'READY' ELSE 'EMPTY' END AS status
+FROM form_template t
+ORDER BY t.sort_order;
+
 -- =====================================================================
 -- D. SEED (items, sections, choices are loaded from per-form JSON files)
 -- =====================================================================
@@ -323,11 +342,29 @@ INSERT INTO form_choice (id, column_id, value, label, sort_order) VALUES
  ('ch-ccp-1','c-ccp-2','NO_CHANGES','No changes',1),
  ('ch-ccp-2','c-ccp-2','WITH_CHANGES','With changes',2);
 
+-- Extra answer layouts used by the other BFP forms
+INSERT INTO form_column_set (id, code) VALUES
+ ('cs-ynr','YES_NO_REMARKS'),
+ ('cs-pfnr','PASS_FAIL_NA_REMARKS'),
+ ('cs-compliant','COMPLIANT_YES_NO_NA');
+
+INSERT INTO form_column (id, column_set_id, key, label, data_type, sort_order) VALUES
+ ('c-ynr-1','cs-ynr','result','Yes / No','YES_NO',1),
+ ('c-ynr-2','cs-ynr','remarks','Remarks','TEXT',2),
+ ('c-pfnr-1','cs-pfnr','result','Passed / Failed / N/A','CHOICE',1),
+ ('c-pfnr-2','cs-pfnr','remarks','Remarks / Corrective Action','TEXT',2),
+ ('c-comp-1','cs-compliant','compliant','Compliant','YES_NO_NA',1);
+
+INSERT INTO form_choice (id, column_id, value, label, sort_order) VALUES
+ ('ch-pfnr-1','c-pfnr-1','PASS','Passed',1),
+ ('ch-pfnr-2','c-pfnr-1','FAIL','Failed',2),
+ ('ch-pfnr-3','c-pfnr-1','NA','N/A',3);
+
 INSERT INTO form_template (id, code, revision, revision_date, name, display_name, subject_type, purpose, sort_order) VALUES
- ('t069','BFP-QSF-FSED-069','01','2024-08-11','Fire Safety Inspection Checklist for the Renewal of FSIC','FSIC renewal','ESTABLISHMENT','RENEWAL',1),
- ('t061','BFP-QSF-FSED-061','02',NULL,'Fire Safety Inspection Checklist for New FSIC and FSIC for Certificate of Occupancy','New FSIC / occupancy','ESTABLISHMENT','NEW',2),
- ('t051','BFP-QSF-FSED-051','00','2020-02-03','Fire Safety Inspection Checklist for Conveyance Clearance','Conveyance clearance','VEHICLE','CONVEYANCE',3),
- ('t068','BFP-QSF-FSED-068','01',NULL,'Inspection Checklist During Construction','During construction','CONSTRUCTION_PROJECT','DURING_CONSTRUCTION',4);
+ ('fsic-renewal','BFP-QSF-FSED-069','01','2024-08-11','Fire Safety Inspection Checklist for the Renewal of FSIC','FSIC renewal','ESTABLISHMENT','RENEWAL',1),
+ ('fsic-new-occupancy','BFP-QSF-FSED-061','02',NULL,'Fire Safety Inspection Checklist for New FSIC and FSIC for Certificate of Occupancy','New FSIC / occupancy','ESTABLISHMENT','NEW',2),
+ ('conveyance-clearance','BFP-QSF-FSED-051','00','2020-02-03','Fire Safety Inspection Checklist for Conveyance Clearance','Conveyance clearance','VEHICLE','CONVEYANCE',3),
+ ('during-construction','BFP-QSF-FSED-068','01',NULL,'Inspection Checklist During Construction','During construction','CONSTRUCTION_PROJECT','DURING_CONSTRUCTION',4);
 
 -- Required signatures: the same set for the four inspection forms (other forms set their own)...
 WITH r(role_code, stage, req, sort) AS (VALUES
@@ -335,8 +372,8 @@ WITH r(role_code, stage, req, sort) AS (VALUES
  ('CHIEF_FSES','APPROVAL',0,4),('FIRE_MARSHAL','APPROVAL',0,5))
 INSERT INTO form_template_signatory (template_id, role_code, stage, is_required, sort_order)
 SELECT t.id, r.role_code, r.stage, r.req, r.sort FROM form_template t CROSS JOIN r
-WHERE t.id IN ('t069','t061','t051','t068');
+WHERE t.id IN ('fsic-renewal','fsic-new-occupancy','conveyance-clearance','during-construction');
 
 -- ...plus the Building Plan Evaluator on the construction form
 INSERT INTO form_template_signatory (template_id, role_code, stage, is_required, sort_order)
-VALUES ('t068','BUILDING_PLAN_EVALUATOR','ON_SITE',1,0);
+VALUES ('during-construction','BUILDING_PLAN_EVALUATOR','ON_SITE',1,0);

@@ -1,3 +1,6 @@
+// =====================================================================
+// DAAN nga listahan sa inspections. Wala na kini gigamit; gipulihan sa Dashboard (page 2).
+// =====================================================================
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -50,8 +53,8 @@ namespace fsi_checklist.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex);
-                await Dialogs.ShowAsync("Couldn't load inspections", ex.Message);
+                AppLog.Error(ex);
+                await Dialogs.ShowAsync("Couldn't load inspections", AppLog.Describe(ex));
             }
         }
 
@@ -72,17 +75,17 @@ namespace fsi_checklist.ViewModels
 
         [RelayCommand]
         private Task NewInspectionAsync() =>
-            Shell.Current.GoToAsync(nameof(NewInspectionPage));
+            Nav.GoAsync(nameof(NewInspectionPage));
 
         [RelayCommand]
         private Task OpenSettingsAsync() =>
-            Shell.Current.GoToAsync(nameof(SettingsPage));
+            Nav.GoAsync(nameof(SettingsPage));
 
         [RelayCommand]
         private Task OpenAsync(InspectionListItem? item) =>
             item == null
                 ? Task.CompletedTask
-                : Shell.Current.GoToAsync($"{nameof(FormPage)}?inspectionId={Uri.EscapeDataString(item.Id)}");
+                : Nav.GoAsync($"{nameof(FormPage)}?inspectionId={Uri.EscapeDataString(item.Id)}");
 
         [RelayCommand]
         private async Task DeleteAsync(InspectionListItem? item)
@@ -106,8 +109,8 @@ namespace fsi_checklist.ViewModels
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine(ex);
-                await Dialogs.ShowAsync("Couldn't delete", ex.Message);
+                AppLog.Error(ex);
+                await Dialogs.ShowAsync("Couldn't delete", AppLog.Describe(ex));
             }
         }
     }

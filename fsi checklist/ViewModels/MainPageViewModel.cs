@@ -1,5 +1,9 @@
+// =====================================================================
+// ViewModel sa Main page: ang 'Inspections' button moabli sa Dashboard, ang 'Settings' sa Settings page.
+// =====================================================================
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using fsi_checklist.Services;
 using fsi_checklist.Views;
 
 
@@ -10,13 +14,13 @@ namespace fsi_checklist.ViewModels
         [RelayCommand]
         private async Task OpenInspectionPageAsync()
         {
-            await Shell.Current.GoToAsync(nameof(InspectionPage));
+            await Nav.GoAsync(nameof(DashboardPage));
         }
 
         [RelayCommand]
         private async Task OpenSettingsAsync()
         {
-            await Shell.Current.GoToAsync(nameof(SettingsPage));
+            await Nav.GoAsync(nameof(SettingsPage));
         }
     }
 }

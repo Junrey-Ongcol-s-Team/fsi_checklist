@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    PAGE 2 (Dashboard): search bar, 4 ka indicator, ug listahan sa inspections nga naay progress bar.
+-->
+<ContentPage
+    x:Class="fsi_checklist.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:fsi_checklist.ViewModels"
+    Title="Inspections">
+
+    <ContentPage.Resources>
+        <Style x:Key="MetricCard" TargetType="Border">
+            <Setter Property="Padding" Value="12" />
+            <Setter Property="StrokeThickness" Value="0" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light=#F1F1F1, Dark=#2A2A2A}" />
+        </Style>
+        <Style x:Key="MetricCaption" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+        </Style>
+        <Style x:Key="MetricNumber" TargetType="Label">
+            <Setter Property="FontSize" Value="28" />
+            <Setter Property="FontAttributes" Value="Bold" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
+
+        <!--  SEARCH BAR: mangita sa owner, business, plate no., form, reference o status  -->
+        <SearchBar
+            Grid.Row="0"
+            Margin="4,4,4,0"
+            Placeholder="Search owner, business, plate no., form, reference or status"
+            Text="{Binding SearchText}" />
+
+        <!--  ANG 4 KA INDICATOR: i-tap aron mo-filter, i-tap usab aron ipakita tanan  -->
+        <!--  (Gibalhin gawas sa CollectionView aron dili magdungan sa "walay sulod" nga text)  -->
+            <Grid
+            Grid.Row="1"
+            Margin="12,10,12,12"
+                    ColumnDefinitions="*,*"
+                ColumnSpacing="10"
+                RowDefinitions="Auto,Auto"
+                RowSpacing="10">
+
+                <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource MetricCard}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="DRAFT" />
+                    </Border.GestureRecognizers>
+                    <Border.Triggers>
+                        <DataTrigger Binding="{Binding SelectedFilter}" TargetType="Border" Value="DRAFT">
+                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                            <Setter Property="StrokeThickness" Value="2" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <VerticalStackLayout>
+                        <Label Style="{StaticResource MetricCaption}" Text="Drafts" />
+                        <Label Style="{StaticResource MetricNumber}" Text="{Binding Drafts}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource MetricCard}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="MISSING" />
+                    </Border.GestureRecognizers>
+                    <Border.Triggers>
+                        <DataTrigger Binding="{Binding SelectedFilter}" TargetType="Border" Value="MISSING">
+                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                            <Setter Property="StrokeThickness" Value="2" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <VerticalStackLayout>
+                        <Label Style="{StaticResource MetricCaption}" Text="Missing signature" />
+                        <Label Style="{StaticResource MetricNumber}" Text="{Binding MissingSignatures}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource MetricCard}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="COMPLETED" />
+                    </Border.GestureRecognizers>
+                    <Border.Triggers>
+                        <DataTrigger Binding="{Binding SelectedFilter}" TargetType="Border" Value="COMPLETED">
+                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                            <Setter Property="StrokeThickness" Value="2" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <VerticalStackLayout>
+                        <Label Style="{StaticResource MetricCaption}" Text="Completed" />
+                        <Label Style="{StaticResource MetricNumber}" Text="{Binding Completed}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource MetricCard}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding SetFilterCommand}" CommandParameter="AWAITING" />
+                    </Border.GestureRecognizers>
+                    <Border.Triggers>
+                        <DataTrigger Binding="{Binding SelectedFilter}" TargetType="Border" Value="AWAITING">
+                            <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                            <Setter Property="StrokeThickness" Value="2" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <VerticalStackLayout>
+                        <Label Style="{StaticResource MetricCaption}" Text="Awaiting approval" />
+                        <Label Style="{StaticResource MetricNumber}" Text="{Binding AwaitingApproval}" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+        <RefreshView
+            Grid.Row="2"
+            IsVisible="{Binding HasItems}"
+            Command="{Binding RefreshCommand}"
+            IsRefreshing="{Binding IsRefreshing}">
+            <CollectionView
+                Margin="12,0"
+                ItemsSource="{Binding Items}"
+                SelectionMode="None">
+
+
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <!--  USA KA CARD: swipe sa wala aron i-delete (draft ra)  -->
+                        <SwipeView Margin="0,0,0,10">
+                            <SwipeView.RightItems>
+                                <SwipeItems Mode="Reveal">
+                                    <!--  Ang SwipeItem wala sa visual tree, busa dili niya makit-an ang ViewModel pinaagi sa RelativeSource.  -->
+                                    <!--  Mao nga ang Delete gi-handle sa code-behind (OnDeleteInvoked).  -->
+                                    <SwipeItem
+                                        BackgroundColor="#C62828"
+                                        CommandParameter="{Binding .}"
+                                        Invoked="OnDeleteInvoked"
+                                        IsVisible="{Binding CanDelete}"
+                                        Text="Delete" />
+                                </SwipeItems>
+                            </SwipeView.RightItems>
+
+                            <Border
+                                Padding="14,12"
+                                BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                                SemanticProperties.Description="{Binding AccessibilityText}"
+                                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
+                                StrokeShape="RoundRectangle 12"
+                                StrokeThickness="1">
+                                <Border.GestureRecognizers>
+                                    <!--  Code-behind handler (dili RelativeSource): ang RelativeSource mahimong null kung tangtangon ang page, ug mo-crash.  -->
+                                    <TapGestureRecognizer CommandParameter="{Binding .}" Tapped="OnCardTapped" />
+                                </Border.GestureRecognizers>
+
+                                <Grid
+                                    ColumnDefinitions="*,Auto"
+                                    RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                                    RowSpacing="3">
+                                    <Label
+                                        FontAttributes="Bold"
+                                        FontSize="16"
+                                        LineBreakMode="TailTruncation"
+                                        Text="{Binding Title}" />
+                                    <Border
+                                        Grid.Column="1"
+                                        Padding="9,3"
+                                        BackgroundColor="{Binding StateColor}"
+                                        StrokeShape="RoundRectangle 10"
+                                        StrokeThickness="0">
+                                        <Label
+                                            FontSize="12"
+                                            Text="{Binding StateText}"
+                                            TextColor="#1F1F1F" />
+                                    </Border>
+                                    <Label
+                                        Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        FontSize="14"
+                                        Text="{Binding SubTitle}" />
+                                    <Label
+                                        Grid.Row="2"
+                                        Grid.ColumnSpan="2"
+                                        FontSize="12"
+                                        Text="{Binding DetailLine}"
+                                        TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+                                    <!--  PROGRESS BAR: green = humana, yellow = naay kulang  -->
+                                    <ProgressBar
+                                        Grid.Row="3"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,6,0,0"
+                                        Progress="{Binding Fraction}"
+                                        ProgressColor="{Binding ProgressColor}" />
+                                    <Label
+                                        Grid.Row="4"
+                                        Grid.ColumnSpan="2"
+                                        FontSize="12"
+                                        Text="{Binding ProgressText}"
+                                        TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+                                    <!--  VIEW RESULTS sa matag inspection (bisan draft)  -->
+                                    <Button
+                                        Grid.Row="5"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,6,0,0"
+                                        Clicked="OnViewResultsClicked"
+                                        FontSize="13"
+                                        HeightRequest="36"
+                                        HorizontalOptions="Start"
+                                        Padding="14,0"
+                                        Text="View results" />
+                                </Grid>
+                            </Border>
+                        </SwipeView>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+
+        <!--  KUNG WALAY SULOD ang listahan: ipakita kini nga mensahe.  -->
+        <!--  Naa kini sa row 2 (ILALOM sa 4 ka indicator, sa tunga sa bakante nga lugar), dili sa kilid.  -->
+        <Label
+            Grid.Row="2"
+            Margin="24,0"
+            FontSize="16"
+            HorizontalTextAlignment="Center"
+            IsVisible="{Binding IsEmpty}"
+            Text="{Binding EmptyText}"
+            TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}"
+            VerticalOptions="Center" />
+
+        <!--  Button sa bag-ong inspection  -->
+        <Button
+            Grid.Row="3"
+            Margin="16,8,16,16"
+            Command="{Binding NewInspectionCommand}"
+            CornerRadius="12"
+            FontAttributes="Bold"
+            HeightRequest="52"
+            Text="+  New inspection" />
+    </Grid>
+</ContentPage>

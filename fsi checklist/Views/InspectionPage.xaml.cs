@@ -1,3 +1,6 @@
+// =====================================================================
+// Code-behind sa daan nga listahan (dili na gigamit).
+// =====================================================================
 using fsi_checklist.ViewModels;
 
 namespace fsi_checklist.Views;

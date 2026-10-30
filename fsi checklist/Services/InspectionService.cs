@@ -1,3 +1,11 @@
+// =====================================================================
+// INSPECTION SERVICE (bahin 1): tanang trabaho sa database bahin sa inspection.
+//   - himo og bag-ong inspection
+//   - i-load ang form ug ang mga tubag
+//   - i-save ang mga tubag (autosave)
+//   - i-delete ang draft
+// Ang bahin 2 (dashboard, pirma, complete) naa sa InspectionService.Workflow.cs.
+// =====================================================================
 using System.Globalization;
 using fsi_checklist.Data.Models;
 using fsi_checklist.Models;
@@ -16,6 +24,8 @@ public sealed record NewInspectionRequest(
     string? ReferenceNo,
     DateTime DateInspected);
 
+public sealed record ChecklistInfo(string Id, string DisplayName, string SubjectType, bool IsInstalled);
+
 public sealed class FormData
 {
     public required Inspection Inspection { get; init; }
@@ -24,9 +34,10 @@ public sealed class FormData
     public required List<FormColumn> Columns { get; init; }
     public required List<FormChoice> Choices { get; init; }
     public required List<InspectionAnswer> Answers { get; init; }
+    public List<Attachment> Photos { get; init; } = new();
 }
 
-public sealed class InspectionService
+public sealed partial class InspectionService
 {
     private readonly DatabaseService _database;
 
@@ -86,6 +97,7 @@ public sealed class InspectionService
         }).ToList();
     }
 
+    // I-delete ang DRAFT ra. Ang completed dili ma-delete (naka-lock).
     /// <summary>Deletes a draft inspection. Completed ones are locked and are left alone.</summary>
     public async Task<bool> DeleteDraftAsync(string inspectionId)
     {
@@ -114,6 +126,7 @@ public sealed class InspectionService
 
     // ----- new inspection ---------------------------------------------------
 
+    // Mga form nga naay sulod (items) ra ang ipakita sa pagpili.
     /// <summary>Active checklists that actually have items loaded.</summary>
     public async Task<List<FormTemplate>> GetAvailableTemplatesAsync()
     {
@@ -125,6 +138,7 @@ public sealed class InspectionService
             .ToListAsync();
     }
 
+    // Himoon ang bag-ong inspection: usa ka 'subject' (ang business/sakyanan) ug usa ka 'inspection' nga DRAFT.
     public async Task<string> CreateInspectionAsync(NewInspectionRequest request)
     {
         await using var db = await _database.OpenContextAsync();
@@ -168,6 +182,7 @@ public sealed class InspectionService
 
     // ----- filling a form ----------------------------------------------------
 
+    // Kuhaon tanan nga kinahanglan sa form: mga seksyon, pangutana, columns, pilian, ug ang mga tubag nga naa na.
     public async Task<FormData?> LoadFormAsync(string inspectionId)
     {
         await using var db = await _database.OpenContextAsync();
@@ -217,9 +232,12 @@ public sealed class InspectionService
             Columns = columns,
             Choices = choices,
             Answers = answers,
+            Photos = await db.Attachments.AsNoTracking()
+                .Where(a => a.InspectionId == inspectionId).OrderBy(a => a.TakenAt).ToListAsync(),
         };
     }
 
+    // I-save ang mga tubag. Kung naa na ang tubag, usbon; kung wala pa, i-add; kung gi-clear, i-delete.
     /// <summary>Upserts a batch of answers; a null text and number removes the answer.</summary>
     public async Task SaveAnswersAsync(string inspectionId, IReadOnlyList<AnswerWrite> writes)
     {
@@ -271,6 +289,29 @@ public sealed class InspectionService
         await db.Inspections
             .Where(i => i.Id == inspectionId)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.UpdatedAt, DateTime.UtcNow));
+    }
+
+    // Para sa page sa dagkong button: tanang form ug kung naa na ba silay sulod.
+    public async Task<List<ChecklistInfo>> GetChecklistsAsync()
+    {
+        await using var db = await _database.OpenContextAsync();
+
+        var rows = await db.FormTemplates
+            .AsNoTracking()
+            .Where(t => t.IsActive)
+            .OrderBy(t => t.SortOrder)
+            .Select(t => new
+            {
+                t.Id,
+                t.DisplayName,
+                t.SubjectType,
+                HasItems = db.FormItems.Any(i => i.TemplateId == t.Id),
+            })
+            .ToListAsync();
+
+        return rows
+            .Select(r => new ChecklistInfo(r.Id, r.DisplayName, r.SubjectType, r.HasItems))
+            .ToList();
     }
 
     private static string NewId() => Guid.NewGuid().ToString();

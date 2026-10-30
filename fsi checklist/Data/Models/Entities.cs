@@ -1,3 +1,7 @@
+// =====================================================================
+// Ang mga C# class nga katumbas sa mga table sa schema.sql.
+// Usa ka class = usa ka table. Usa ka property = usa ka column.
+// =====================================================================
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -19,8 +23,6 @@ public sealed class FormTemplate
     public string? Purpose { get; set; }
     public int SortOrder { get; set; }
     public bool IsActive { get; set; } = true;
-
-    public override string ToString() => DisplayName;
 }
 
 [Table("form_section")]
@@ -91,6 +93,7 @@ public sealed class Subject
     public DateTime UpdatedAt { get; set; }
 }
 
+// Usa ka inspection. Ang Status kay DRAFT o COMPLETED.
 [Table("inspection")]
 public sealed class Inspection
 {
@@ -112,6 +115,7 @@ public sealed class Inspection
     public FormTemplate Template { get; set; } = null!;
 }
 
+// Usa ka tubag sa usa ka slot sa usa ka pangutana.
 [Table("inspection_answer")]
 public sealed class InspectionAnswer
 {
@@ -131,4 +135,58 @@ public sealed class AppSetting
 {
     [Key] public string Key { get; set; } = string.Empty;
     public string? Value { get; set; }
+}
+
+[Table("signatory_role")]
+public sealed class SignatoryRole
+{
+    [Key] public string Code { get; set; } = string.Empty;
+    public string Label { get; set; } = string.Empty;
+}
+
+// Composite key (TemplateId, RoleCode) is set in AppDbContext.
+// Kinsa ang kinahanglan mo-pirma sa matag form, ug kanus-a (ON_SITE = sa inspection, APPROVAL = sa opisina).
+[Table("form_template_signatory")]
+public sealed class FormTemplateSignatory
+{
+    public string TemplateId { get; set; } = string.Empty;
+    public string RoleCode { get; set; } = string.Empty;
+    public string Stage { get; set; } = "ON_SITE";   // ON_SITE = at the inspection, APPROVAL = later at the office
+    public bool IsRequired { get; set; }
+    public int MinCount { get; set; } = 1;
+    public int SortOrder { get; set; }
+}
+
+// Usa ka linya sa pirma: kinsa (role), ngalan, status (PENDING/SIGNED), file sa pirma, ug oras.
+[Table("inspection_signatory")]
+public sealed class InspectionSignatory
+{
+    [Key] public string Id { get; set; } = string.Empty;
+    public string InspectionId { get; set; } = string.Empty;
+    public string RoleCode { get; set; } = string.Empty;
+    public string? PersonnelId { get; set; }
+    public string PrintedName { get; set; } = string.Empty;
+    public string? PositionTitle { get; set; }
+    public string Status { get; set; } = "PENDING";   // PENDING, SIGNED, REFUSED
+    public string? SignaturePath { get; set; }        // relative to the app data folder
+    public string? SignatureSha256 { get; set; }
+    public DateTime? SignedAt { get; set; }
+    public string? RefusedReason { get; set; }
+    public string? Decision { get; set; }             // APPROVED / DISAPPROVED
+    public int SortOrder { get; set; }
+}
+
+// Usa ka litrato nga gi-attach sa inspection. Ang file mismo naa sa "photos" folder; diri ang path ra.
+[Table("attachment")]
+public sealed class Attachment
+{
+    [Key] public string Id { get; set; } = string.Empty;
+    public string InspectionId { get; set; } = string.Empty;
+    public string? ItemId { get; set; }      // asa nga pangutana
+    public string? FindingId { get; set; }
+    public string Kind { get; set; } = "PHOTO";
+    public string FilePath { get; set; } = string.Empty;   // relative sa app data folder, pananglitan photos/abc.jpg
+    public string? Caption { get; set; }
+    public string? Tag { get; set; }         // pananglitan FRONT, REAR, SIDE (064)
+    public DateTime TakenAt { get; set; }
 }

@@ -1,3 +1,6 @@
+// =====================================================================
+// Gamay nga helper para sa mga popup: ShowAsync = OK ra, ConfirmAsync = Oo/Dili.
+// =====================================================================
 namespace fsi_checklist.Services;
 
 /// <summary>Thin wrapper so alert calls live in one place.</summary>

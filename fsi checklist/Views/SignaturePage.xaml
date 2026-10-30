@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    E-SIGNATURE page: printed name, (Approved/Disapproved), ug ang puti nga kahon diin mo-pirma gamit ang tudlo.
+-->
+<ContentPage
+    x:Class="fsi_checklist.Views.SignaturePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Sign">
+
+    <ContentPage.Resources>
+        <Style x:Key="ChipStyle" TargetType="Button">
+            <Setter Property="HeightRequest" Value="40" />
+            <Setter Property="CornerRadius" Value="20" />
+            <Setter Property="Padding" Value="18,0" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#BDBDBD, Dark=#5A5A5A}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid
+        Padding="16"
+        RowDefinitions="Auto,Auto,*,Auto,Auto"
+        RowSpacing="10">
+
+        <Label
+            Grid.Row="0"
+            FontAttributes="Bold"
+            FontSize="20"
+            Text="{Binding RoleLabel}" />
+
+        <VerticalStackLayout Grid.Row="1" Spacing="6">
+            <Label FontSize="12" Text="Printed name" />
+            <Entry Placeholder="Full name" Text="{Binding PrintedName}" />
+
+            <!--  Approved / Disapproved: makita ra para sa Fire Marshal  -->
+            <HorizontalStackLayout IsVisible="{Binding NeedsDecision}" Spacing="8">
+                <Button
+                    Command="{Binding SetDecisionCommand}"
+                    CommandParameter="APPROVED"
+                    Style="{StaticResource ChipStyle}"
+                    Text="Approved">
+                    <Button.Triggers>
+                        <DataTrigger Binding="{Binding Decision}" TargetType="Button" Value="APPROVED">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                            <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+                <Button
+                    Command="{Binding SetDecisionCommand}"
+                    CommandParameter="DISAPPROVED"
+                    Style="{StaticResource ChipStyle}"
+                    Text="Disapproved">
+                    <Button.Triggers>
+                        <DataTrigger Binding="{Binding Decision}" TargetType="Button" Value="DISAPPROVED">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                            <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                            <Setter Property="TextColor" Value="White" />
+                        </DataTrigger>
+                    </Button.Triggers>
+                </Button>
+            </HorizontalStackLayout>
+
+            <!--  PRE-SIGNED: kung naa nay saved nga pirma sa Settings, i-tap lang ni (dili na mag-drawing)  -->
+            <VerticalStackLayout IsVisible="{Binding HasSaved}" Spacing="6">
+                <Label FontSize="12" Text="Saved signature (from Settings)" />
+                <Border Stroke="#BDBDBD" StrokeShape="RoundRectangle 8">
+                    <GraphicsView Drawable="{Binding SavedPreview}" HeightRequest="70" />
+                </Border>
+                <Button
+                    Command="{Binding UseSavedCommand}"
+                    HeightRequest="48"
+                    IsEnabled="{Binding CanSave}"
+                    Text="Use saved signature" />
+                <Label FontSize="12" Text="Or sign again below:" />
+            </VerticalStackLayout>
+
+            <Label FontSize="12" Text="Sign inside the box" />
+        </VerticalStackLayout>
+
+        <Border
+            Grid.Row="2"
+            Stroke="{AppThemeBinding Light=#9E9E9E, Dark=#6E6E6E}"
+            StrokeShape="RoundRectangle 10"
+            StrokeThickness="1.5">
+            <!--  ANG KAHON SA PIRMA: dinhi mo-pirma gamit ang tudlo  -->
+            <GraphicsView
+                x:Name="Pad"
+                BackgroundColor="White"
+                CancelInteraction="OnPadCancel"
+                DragInteraction="OnPadDrag"
+                EndInteraction="OnPadEnd"
+                StartInteraction="OnPadStart" />
+        </Border>
+
+        <Label
+            Grid.Row="3"
+            IsVisible="{Binding HasError}"
+            Text="{Binding ErrorText}"
+            TextColor="#C62828" />
+
+        <Grid
+            Grid.Row="4"
+            ColumnDefinitions="*,*,*"
+            ColumnSpacing="8">
+            <Button
+                Grid.Column="0"
+                Clicked="OnClear"
+                Text="Clear" />
+            <Button
+                Grid.Column="1"
+                Command="{Binding CancelCommand}"
+                Text="Cancel" />
+            <Button
+                Grid.Column="2"
+                Clicked="OnSave"
+                IsEnabled="{Binding CanSave}"
+                Text="Save signature" />
+        </Grid>
+    </Grid>
+</ContentPage>

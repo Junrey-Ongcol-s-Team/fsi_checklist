@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -17,6 +17,10 @@ namespace fsi_checklist.WinUI
         public App()
         {
             this.InitializeComponent();
+
+            // CRASH LOGGER (Windows): isulat sa app.log ang error nga mahitabo sa UI.
+            this.UnhandledException += (_, e) =>
+                fsi_checklist.Services.AppLog.Error(e.Exception, "UNHANDLED (Windows UI)");
         }
 
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();

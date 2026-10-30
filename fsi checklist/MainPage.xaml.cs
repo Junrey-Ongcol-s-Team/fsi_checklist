@@ -1,4 +1,7 @@
-﻿using fsi_checklist.ViewModels;
+// =====================================================================
+// Code-behind sa Main page: nagkonektar sa page ug sa iyang ViewModel (BindingContext).
+// =====================================================================
+using fsi_checklist.ViewModels;
 
 namespace fsi_checklist
 {

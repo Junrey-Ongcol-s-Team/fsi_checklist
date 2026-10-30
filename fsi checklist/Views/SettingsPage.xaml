@@ -1,27 +1,77 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--
+    Settings page (ngalan ug address sa istasyon).
+-->
 <ContentPage
     x:Class="fsi_checklist.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-    xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
     Title="Settings">
 
-    <Grid RowDefinitions="*,Auto">
-        <ScrollView Grid.Row="0">
-            <VerticalStackLayout Padding="16,12" Spacing="16">
-                <material:TextField Title="Fire station name" Text="{Binding StationName}" />
+    <ScrollView>
+        <VerticalStackLayout Padding="16" Spacing="12">
+            <Label FontSize="12" Text="Fire station name" />
+            <Entry Text="{Binding StationName}" />
 
-                <material:TextField Title="Fire station address" Text="{Binding StationAddress}" />
+            <Label FontSize="12" Text="Fire station address" />
+            <Entry Text="{Binding StationAddress}" />
+
+            <Button
+                Margin="0,12,0,0"
+                Command="{Binding SaveCommand}"
+                CornerRadius="12"
+                HeightRequest="52"
+                Text="Save" />
+
+            <!--  PRE-SIGNED NGA PIRMA: mo-pirma kausa ra ang taga-BFP; gamiton na kini kada inspection  -->
+            <Label
+                Margin="0,24,0,0"
+                FontAttributes="Bold"
+                FontSize="18"
+                Text="Saved signatures (BFP)" />
+            <Label
+                FontSize="12"
+                Text="Sign once here. The app puts these signatures on every inspection. Only the owner / representative signs each inspection."
+                TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+            <VerticalStackLayout BindableLayout.ItemsSource="{Binding Presigns}" Spacing="10">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
+                        <Border
+                            Padding="12"
+                            Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
+                            StrokeShape="RoundRectangle 12">
+                            <VerticalStackLayout Spacing="6">
+                                <Label FontAttributes="Bold" Text="{Binding RoleLabel}" />
+                                <Label FontSize="13" Text="{Binding NameText}" />
+                                <GraphicsView
+                                    Drawable="{Binding Preview}"
+                                    HeightRequest="60"
+                                    IsVisible="{Binding HasPreview}" />
+                                <Button
+                                    Clicked="OnPresignClicked"
+                                    HeightRequest="44"
+                                    Text="{Binding ButtonText}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
             </VerticalStackLayout>
-        </ScrollView>
 
-        <Button
-            Grid.Row="1"
-            Margin="16,8,16,16"
-            Command="{Binding SaveCommand}"
-            CornerRadius="12"
-            FontAttributes="Bold"
-            HeightRequest="52"
-            Text="Save" />
-    </Grid>
+            <!--  PARA SA DEBUGGING: asa ang database ug log, ug ang Reset  -->
+            <Label
+                Margin="0,24,0,0"
+                FontAttributes="Bold"
+                FontSize="18"
+                Text="Database" />
+            <Label FontSize="12" Text="Database file" />
+            <Entry IsReadOnly="True" Text="{Binding DatabasePath, Mode=OneWay}" />
+            <Label FontSize="12" Text="Error log (open with Notepad)" />
+            <Entry IsReadOnly="True" Text="{Binding LogPath, Mode=OneWay}" />
+            <Button
+                BackgroundColor="#C62828"
+                Command="{Binding ResetDatabaseCommand}"
+                Text="Reset database"
+                TextColor="White" />
+        </VerticalStackLayout>
+    </ScrollView>
 </ContentPage>

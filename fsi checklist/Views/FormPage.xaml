@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8" ?>
+<!--
+    PAGE 3 (Form): ang checklist. Sa ubos naay progress bar ug mga button: Save draft, Next missing, Sign-off.
+-->
 <ContentPage
     x:Class="fsi_checklist.Views.FormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:fsi_checklist.Views"
-    xmlns:material="http://schemas.enisn-projects.io/dotnet/maui/uraniumui/material"
     Title="{Binding Title}">
 
     <ContentPage.Resources>
@@ -32,99 +34,69 @@
 
         <!--  Answer slots  -->
         <DataTemplate x:Key="TextSlot">
-            <material:TextField Title="{Binding Title}" Text="{Binding Text}" />
-        </DataTemplate>
-
-        <DataTemplate x:Key="LongTextSlot">
-            <material:EditorField Title="{Binding Title}" Text="{Binding Text}" />
-        </DataTemplate>
-
-        <DataTemplate x:Key="NumberSlot">
-            <material:TextField
-                Title="{Binding Title}"
-                Keyboard="Numeric"
-                Text="{Binding Text}" />
-        </DataTemplate>
-
-        <DataTemplate x:Key="DateSlot">
-            <VerticalStackLayout Spacing="4">
+            <VerticalStackLayout Spacing="2">
                 <Label
                     FontSize="12"
                     IsVisible="{Binding HasLabel}"
                     Text="{Binding Label}" />
-                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                    <material:DatePickerField
-                        Title="Date"
-                        Date="{Binding DateValue}"
-                        IsVisible="{Binding HasDate}" />
-                    <Button
-                        Grid.Column="0"
-                        Command="{Binding SetTodayCommand}"
-                        IsVisible="{Binding HasNoDate}"
-                        Style="{StaticResource SmallButton}"
-                        Text="Pick a date" />
-                    <Button
-                        Grid.Column="1"
-                        BackgroundColor="Transparent"
-                        BorderColor="{AppThemeBinding Light=#BDBDBD,
-                                                      Dark=#5A5A5A}"
-                        BorderWidth="1"
-                        Command="{Binding ClearDateCommand}"
-                        IsVisible="{Binding HasDate}"
-                        Style="{StaticResource SmallButton}"
-                        Text="Clear"
-                        TextColor="{AppThemeBinding Light=#424242,
-                                                    Dark=#E0E0E0}" />
-                </Grid>
+                <Entry Placeholder="{Binding Hint}" Text="{Binding Text}" />
             </VerticalStackLayout>
         </DataTemplate>
 
-        <DataTemplate x:Key="DateTimeSlot">
-            <VerticalStackLayout Spacing="4">
+        <DataTemplate x:Key="LongTextSlot">
+            <VerticalStackLayout Spacing="2">
                 <Label
                     FontSize="12"
                     IsVisible="{Binding HasLabel}"
                     Text="{Binding Label}" />
-                <Grid
-                    ColumnDefinitions="*,*,Auto"
-                    ColumnSpacing="8"
-                    IsVisible="{Binding HasDate}">
-                    <material:DatePickerField
-                        Title="Date"
-                        Date="{Binding DateValue}" />
-                    <material:TimePickerField
-                        Title="Time"
-                        Grid.Column="1"
-                        Time="{Binding TimeValue}" />
+                <Editor
+                    AutoSize="TextChanges"
+                    MinimumHeightRequest="80"
+                    Text="{Binding Text}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="NumberSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Entry
+                    Keyboard="Numeric"
+                    Placeholder="{Binding Hint}"
+                    Text="{Binding Text}" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <DataTemplate x:Key="DateSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <HorizontalStackLayout Spacing="8">
+                    <DatePicker Date="{Binding DateValue}" IsVisible="{Binding HasDate}" />
                     <Button
-                        Grid.Column="2"
-                        BackgroundColor="Transparent"
-                        BorderColor="{AppThemeBinding Light=#BDBDBD,
-                                                      Dark=#5A5A5A}"
-                        BorderWidth="1"
+                        Command="{Binding SetTodayCommand}"
+                        IsVisible="{Binding HasNoDate}"
+                        Text="Set date" />
+                    <Button
                         Command="{Binding ClearDateCommand}"
-                        Style="{StaticResource SmallButton}"
-                        Text="Clear"
-                        TextColor="{AppThemeBinding Light=#424242,
-                                                    Dark=#E0E0E0}" />
-                </Grid>
-                <Button
-                    Command="{Binding SetTodayCommand}"
-                    HorizontalOptions="Start"
-                    IsVisible="{Binding HasNoDate}"
-                    Style="{StaticResource SmallButton}"
-                    Text="Pick date and time" />
+                        IsVisible="{Binding HasDate}"
+                        Text="Clear" />
+                </HorizontalStackLayout>
             </VerticalStackLayout>
         </DataTemplate>
 
         <DataTemplate x:Key="BoolSlot">
-            <HorizontalStackLayout Spacing="8">
-                <CheckBox IsChecked="{Binding IsChecked}" VerticalOptions="Center" />
+            <VerticalStackLayout Spacing="2">
                 <Label
+                    FontSize="12"
                     IsVisible="{Binding HasLabel}"
-                    Text="{Binding Label}"
-                    VerticalOptions="Center" />
-            </HorizontalStackLayout>
+                    Text="{Binding Label}" />
+                <CheckBox HorizontalOptions="Start" IsChecked="{Binding IsChecked}" />
+            </VerticalStackLayout>
         </DataTemplate>
 
         <DataTemplate x:Key="ChoiceSlot">
@@ -170,7 +142,6 @@
             BoolTemplate="{StaticResource BoolSlot}"
             ChoiceTemplate="{StaticResource ChoiceSlot}"
             DateTemplate="{StaticResource DateSlot}"
-            DateTimeTemplate="{StaticResource DateTimeSlot}"
             LongTextTemplate="{StaticResource LongTextSlot}"
             NumberTemplate="{StaticResource NumberSlot}"
             PhotoTemplate="{StaticResource PhotoSlot}"
@@ -188,6 +159,16 @@
                                          Dark=#3C3C3C}"
                 StrokeShape="RoundRectangle 10"
                 StrokeThickness="1">
+                <!--  Yellow nga frame kung kulang ang tubag (human mo-tap og Next missing)  -->
+                <Border.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsMissing}"
+                        TargetType="Border"
+                        Value="True">
+                        <Setter Property="Stroke" Value="#F9A825" />
+                        <Setter Property="StrokeThickness" Value="3" />
+                    </DataTrigger>
+                </Border.Triggers>
                 <VerticalStackLayout Spacing="8">
                     <Label FontSize="15" Text="{Binding LabelText}" />
                     <Label
@@ -198,6 +179,52 @@
                         BindableLayout.ItemTemplateSelector="{StaticResource SlotSelector}"
                         BindableLayout.ItemsSource="{Binding Slots}"
                         Spacing="8" />
+
+                    <!--  LITRATO: makita ra kung kinahanglan og litrato ang pangutana (064 photos, Defects)  -->
+                    <VerticalStackLayout
+                        BindableLayout.ItemsSource="{Binding PhotoSlots}"
+                        IsVisible="{Binding HasPhotoSlots}"
+                        Spacing="10">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <VerticalStackLayout Spacing="6">
+                                    <Label FontAttributes="Bold" FontSize="13" Text="{Binding Label}" />
+
+                                    <!--  Take photo = camera, Choose photo = gallery / file  -->
+                                    <HorizontalStackLayout Spacing="8">
+                                        <Button Clicked="OnTakePhotoClicked" FontSize="13" Text="Take photo" />
+                                        <Button Clicked="OnChoosePhotoClicked" FontSize="13" Text="Choose photo" />
+                                    </HorizontalStackLayout>
+
+                                    <!--  Ang gagmay nga hulagway, uban ang Remove  -->
+                                    <FlexLayout BindableLayout.ItemsSource="{Binding Photos}" Wrap="Wrap">
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate>
+                                                <VerticalStackLayout Margin="0,0,8,8" Spacing="4">
+                                                    <!--  I-tap ang litrato para makita og dako  -->
+                                                    <Image
+                                                        Aspect="AspectFill"
+                                                        HeightRequest="96"
+                                                        Source="{Binding FullPath}"
+                                                        WidthRequest="96">
+                                                        <Image.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                                        </Image.GestureRecognizers>
+                                                    </Image>
+                                                    <Button
+                                                        Clicked="OnRemovePhotoClicked"
+                                                        FontSize="12"
+                                                        HeightRequest="32"
+                                                        Padding="8,0"
+                                                        Text="Remove" />
+                                                </VerticalStackLayout>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </FlexLayout>
+                                </VerticalStackLayout>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
             </Border>
         </DataTemplate>
@@ -217,8 +244,10 @@
             FontAttributes="Bold"
             Text="{Binding Subtitle}" />
 
-        <ScrollView Grid.Row="1">
+        <!--  ANG MGA PANGUTANA (gihimo gikan sa database)  -->
+        <ScrollView x:Name="FormScroll" Grid.Row="1">
             <VerticalStackLayout
+                x:Name="RowsLayout"
                 Padding="12,0,12,24"
                 BindableLayout.ItemTemplateSelector="{StaticResource RowSelector}"
                 BindableLayout.ItemsSource="{Binding Rows}"
@@ -232,11 +261,41 @@
             IsVisible="{Binding IsBusy}"
             VerticalOptions="Center" />
 
-        <Label
+        <Border
             Grid.Row="2"
-            Padding="16,6"
-            FontSize="12"
-            HorizontalTextAlignment="End"
-            Text="{Binding SaveStatus}" />
+            Padding="12,8"
+            BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1E1E1E}"
+            StrokeThickness="0">
+            <VerticalStackLayout Spacing="6">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="13"
+                        Text="{Binding ProgressText}" />
+                    <Label
+                        Grid.Column="1"
+                        FontSize="12"
+                        Text="{Binding SaveStatus}" />
+                </Grid>
+                <ProgressBar Progress="{Binding ProgressFraction}" ProgressColor="{Binding ProgressColor}" />
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                    <!--  Save draft = mobalik sa dashboard; Next missing = pangitaon ang kulang; Sign-off = pirma  -->
+                    <Button
+                        Command="{Binding SaveDraftCommand}"
+                        FontSize="13"
+                        Text="Save draft" />
+                    <Button
+                        Grid.Column="1"
+                        Command="{Binding NextMissingCommand}"
+                        FontSize="13"
+                        Text="Next missing" />
+                    <Button
+                        Grid.Column="2"
+                        Command="{Binding GoToSignoffCommand}"
+                        FontSize="13"
+                        Text="Sign-off" />
+                </Grid>
+            </VerticalStackLayout>
+        </Border>
     </Grid>
 </ContentPage>
