@@ -23,18 +23,25 @@ public partial class DashboardPage : ContentPage
             await _viewModel.OpenCommand.ExecuteAsync(row);
     }
 
-    // VIEW RESULTS button sa card: ablihan ang Results page para niini nga inspection.
+    // VIEW RESULT button sa card: ablihan ang Results page para niini nga inspection.
     private async void OnViewResultsClicked(object? sender, EventArgs e)
     {
         if ((sender as BindableObject)?.BindingContext is DashboardRow row)
             await fsi_checklist.Services.Nav.GoAsync($"{nameof(ResultsPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
     }
 
-    // EDIT button sa card (alert kung naka-pirma na ang Chief FSES ug Fire Marshal).
+    // EDIT ENTRIES button sa card (pwede kanunay gawas kung locked).
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         if ((sender as BindableObject)?.BindingContext is DashboardRow row)
             await _viewModel.EditCommand.ExecuteAsync(row);
+    }
+
+    // LOCK THIS INSPECTION button sa card (pangutan-on una).
+    private async void OnLockClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is DashboardRow row)
+            await _viewModel.LockCommand.ExecuteAsync(row);
     }
 
     // SWIPE -> DELETE: kuhaon ang card nga gi-swipe, dayon ipadala sa DeleteCommand sa ViewModel.

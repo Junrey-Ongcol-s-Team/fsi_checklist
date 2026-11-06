@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.DashboardPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:dash="clr-namespace:fsi_checklist.Controls.Dashboard"
     xmlns:vm="clr-namespace:fsi_checklist.ViewModels"
     Title="Inspections">
 
@@ -195,29 +196,17 @@
                                         FontSize="12"
                                         Text="{Binding ProgressText}"
                                         TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
-                                    <!--  VIEW RESULTS ug EDIT sa matag inspection  -->
-                                    <HorizontalStackLayout
+                                    <!--  3 KA BUTTON (kaugalingong controls sa Controls/Dashboard):  -->
+                                    <!--  View result | Edit entries | Lock this inspection  -->
+                                    <FlexLayout
                                         Grid.Row="5"
                                         Grid.ColumnSpan="2"
                                         Margin="0,6,0,0"
-                                        Spacing="8">
-                                        <Button
-                                            Clicked="OnViewResultsClicked"
-                                            FontSize="13"
-                                            HeightRequest="36"
-                                            Padding="14,0"
-                                            Text="View results" />
-                                        <Button
-                                            BackgroundColor="Transparent"
-                                            BorderColor="{StaticResource Primary}"
-                                            BorderWidth="1"
-                                            Clicked="OnEditClicked"
-                                            FontSize="13"
-                                            HeightRequest="36"
-                                            Padding="14,0"
-                                            Text="Edit"
-                                            TextColor="{StaticResource Primary}" />
-                                    </HorizontalStackLayout>
+                                        Wrap="Wrap">
+                                        <dash:ViewResultButton Clicked="OnViewResultsClicked" />
+                                        <dash:EditEntriesButton Clicked="OnEditClicked" IsVisible="{Binding CanEdit}" />
+                                        <dash:LockInspectionButton Clicked="OnLockClicked" IsLocked="{Binding IsLocked}" />
+                                    </FlexLayout>
                                 </Grid>
                             </Border>
                         </SwipeView>

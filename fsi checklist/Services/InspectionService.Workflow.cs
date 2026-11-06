@@ -1,12 +1,16 @@
 // =====================================================================
 // WORKFLOW sa inspection (bahin 2 sa InspectionService):
 //   - Dashboard: ihap sa 4 ka indicator ug listahan sa inspections nga naay progress
-//   - Sign-off: mga linya sa pirma, pag-save sa pirma, ug pag-Complete (lock)
+//   - Sign-off: mga linya sa pirma, pag-save sa pirma, ug pag-Complete
+//   - Edit entries (pwede kanunay) ug Lock this inspection (dili na ma-edit)
 // Ang status sa inspection:
 //   Draft             = wala pa nahuman ang form
 //   Missing signature = nahuman na ang form pero kulang pa ang required nga pirma
 //   Awaiting approval = na-complete ug na-lock na, naghulat sa pirma sa Fire Marshal
 //   Completed         = naka-pirma na ang Fire Marshal
+//   LOCKED (dugang)   = gi-lock na ("Lock this inspection"): dili na ma-edit bisan unsa
+// Sugyot ni Sir Junrey: pag Complete, awtomatik na ang pirma sa Chief FSES ug Fire Marshal
+// (gikan sa Settings / pre-sign), ug pwede kanunay i-edit hangtod i-lock.
 // =====================================================================
 using System.Security.Cryptography;
 using System.Text;
@@ -27,7 +31,8 @@ public sealed record DashboardItem(
     DateTime? DateInspected,
     InspectionState State,
     ProgressResult Progress,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    bool IsLocked);
 
 public sealed record DashboardData(
     int Drafts, int MissingSignatures, int Completed, int AwaitingApproval, List<DashboardItem> Items);
@@ -54,7 +59,8 @@ public sealed record SignoffData(
     ProgressResult Progress,
     int MissingOnSite,
     bool IsApproved,
-    List<SignatoryInfo> Signatories);
+    List<SignatoryInfo> Signatories,
+    bool IsLocked);
 
 /// <summary>
 /// The life of an inspection:
@@ -86,6 +92,7 @@ public sealed partial class InspectionService
                 i.ReferenceNo,
                 i.DateInspected,
                 i.UpdatedAt,
+                i.LockedAt,
                 SubjectName = i.Subject.Name,
                 OwnerName = i.Subject.OwnerName,
                 TemplateName = i.Template.DisplayName,
@@ -174,7 +181,8 @@ public sealed partial class InspectionService
                 i.DateInspected,
                 state,
                 progress,
-                i.UpdatedAt));
+                i.UpdatedAt,
+                i.LockedAt != null));
         }
 
         result = result.OrderByDescending(r => r.UpdatedAt).ToList();
@@ -235,7 +243,8 @@ public sealed partial class InspectionService
                 progress,
                 CountMissingOnSite(rules, rows),
                 rows.Any(s => s.RoleCode == "FIRE_MARSHAL" && s.Status == "SIGNED"),
-                infos);
+                infos,
+                inspection.LockedAt != null);
         }
         finally
         {
@@ -265,7 +274,7 @@ public sealed partial class InspectionService
 
     // I-SAVE ANG PIRMA.
     // Mga lagda: ang pirma sa inspection kinahanglan humana ang form; ang pirma sa opisina human ma-complete.
-    // Kung na-pirmahan na, dili na mausab.
+    // Kung na-pirmahan na, dili na mausab. Kung LOCKED na ang inspection: wala nay pirma nga madawat.
     /// <summary>Stores the drawn signature on a signature line. A signed line can never be changed.</summary>
     public async Task<(bool Ok, string Message)> SaveSignatureAsync(
         string signatoryId, string printedName, string? decision, string strokesJson)
@@ -280,15 +289,15 @@ public sealed partial class InspectionService
             return (false, "This line is already signed and cannot be changed.");
 
         var inspection = await db.Inspections.AsNoTracking().FirstAsync(i => i.Id == sig.InspectionId);
+        if (inspection.LockedAt != null)
+            return (false, "This inspection is locked and can no longer be changed.");
 
         var rule = await db.FormTemplateSignatories.AsNoTracking()
             .FirstOrDefaultAsync(r => r.TemplateId == inspection.TemplateId && r.RoleCode == sig.RoleCode);
 
         if ((rule?.Stage ?? "ON_SITE") == "ON_SITE")
         {
-            if (inspection.Status != "DRAFT")
-                return (false, "This inspection is already completed.");
-
+            // Pwede gihapon bisan na-Complete na (pananglitan Fire Safety Inspector 2 nga nahabilin)
             var progress = await ComputeProgressAsync(db, inspection);
             if (!progress.IsComplete)
                 return (false, $"Finish the form first ({progress.Missing} items are still missing).");
@@ -308,9 +317,10 @@ public sealed partial class InspectionService
         return (true, "Signed.");
     }
 
-    // COMPLETE: i-lock ang inspection. Kinahanglan humana ang form ug kompleto ang required nga pirma.
-    // Human niini, dili na mausab ang mga tubag (gibantayan sa trigger sa schema.sql).
-    /// <summary>Locks the inspection (answers can no longer change) once everything is filled in and signed.</summary>
+    // COMPLETE: humana na ang inspection. Kinahanglan humana ang form ug kompleto ang required nga pirma.
+    // AWTOMATIK dayon ang pirma sa Chief FSES ug Fire Marshal (gikan sa Settings / pre-sign),
+    // aron dili na sila mobalik pa og pirma. Pwede gihapon i-EDIT hangtod i-LOCK (tan-awa LockInspectionAsync).
+    /// <summary>Completes the inspection and adds the saved Chief FSES / Fire Marshal signatures right away.</summary>
     public async Task<(bool Ok, string Message)> CompleteInspectionAsync(string inspectionId)
     {
         await using var db = await _database.OpenContextAsync();
@@ -321,6 +331,8 @@ public sealed partial class InspectionService
 
         if (inspection.Status == "COMPLETED")
             return (true, "Already completed.");
+        if (inspection.LockedAt != null)
+            return (false, "This inspection is locked.");
 
         var progress = await ComputeProgressAsync(db, inspection);
         if (!progress.IsComplete)
@@ -343,86 +355,56 @@ public sealed partial class InspectionService
                 .SetProperty(i => i.CompletedAt, (DateTime?)DateTime.UtcNow)
                 .SetProperty(i => i.UpdatedAt, DateTime.UtcNow));
 
-        // Human ma-complete: ibutang ang pre-signed nga pirma sa opisina (pananglitan Chief FSES).
+        // Human ma-complete: AWTOMATIK ang pre-signed nga pirma sa opisina (Chief FSES ug Fire Marshal).
         inspection.Status = "COMPLETED";
         await ApplyPresignsAsync(db, inspection);
 
-        return (true, "Inspection completed.");
+        // Isulti kung naa pay kulang nga pirma sa opisina (wala pa naka-pre-sign sa Settings)
+        var approvalRoles = rules.Where(r => r.Stage == "APPROVAL").Select(r => r.RoleCode).ToList();
+        var stillPending = await db.InspectionSignatories.AsNoTracking()
+            .Where(s => s.InspectionId == inspectionId && s.Status == "PENDING" && approvalRoles.Contains(s.RoleCode))
+            .Select(s => s.RoleCode).ToListAsync();
+        if (stillPending.Count == 0)
+            return (true, "Inspection completed. The Chief FSES and Fire Marshal signatures were added automatically.");
+
+        string who = string.Join(" and ", stillPending.Select(r => r == "FIRE_MARSHAL" ? "Fire Marshal" : r == "CHIEF_FSES" ? "Chief FSES" : r));
+        return (true, $"Inspection completed. No saved signature yet for the {who} (Settings), so they still need to sign.");
     }
 
-    // EDIT sa na-complete nga inspection:
-    //   Dili na pwede kung naka-pirma na ang tanang head sa APPROVAL (Chief FSES ug Fire Marshal)
-    //   UG kompleto na ang tanang pirma ug ang form. Kung naay kulang nga pirma (pananglitan Inspector 2)
-    //   o kulang sa form (pananglitan "7 missing"): pwede gihapon i-edit aron mapuno.
-    //   Kung pwede: ibalik sa DRAFT (ma-usab na ang tubag). Ang pirma sa approval nga naa na (pananglitan
-    //   ang Chief FSES nga pre-signed) tangtangon, kay usbon man ang sulod; mobalik kini pag Complete.
-    //   Ang pirma sa on-site (Owner, Inspector, Team Leader) magpabilin.
-    public async Task<(bool Allowed, bool HasApprovalSignature, string Reason)> CheckEditAsync(string inspectionId)
+    // EDIT ENTRIES: pwede KANUNAY i-edit (bisan na-Complete ug naka-pirma na), gawas kung LOCKED.
+    // Ang mga pirma magpabilin; dili na kinahanglan mobalik og pirma ang Chief FSES ug Fire Marshal.
+    public async Task<(bool Allowed, string Reason)> CheckEditAsync(string inspectionId)
     {
         await using var db = await _database.OpenContextAsync();
         var inspection = await db.Inspections.AsNoTracking().FirstOrDefaultAsync(i => i.Id == inspectionId);
         if (inspection == null)
-            return (false, false, "This inspection no longer exists.");
-        if (inspection.Status == "DRAFT")
-            return (true, false, "");
-
-        var approvalRoles = await db.FormTemplateSignatories.AsNoTracking()
-            .Where(r => r.TemplateId == inspection.TemplateId && r.Stage == "APPROVAL")
-            .Select(r => r.RoleCode).ToListAsync();
-        var signedRoles = await db.InspectionSignatories.AsNoTracking()
-            .Where(s => s.InspectionId == inspectionId && s.Status == "SIGNED" && approvalRoles.Contains(s.RoleCode))
-            .Select(s => s.RoleCode).Distinct().ToListAsync();
-
-        // Naay kulang nga pirma (bisan optional, pananglitan Fire Safety Inspector 2)? -> pwede i-edit
-        bool missingSignature = await db.InspectionSignatories.AsNoTracking()
-            .AnyAsync(s => s.InspectionId == inspectionId && s.Status == "PENDING");
-
-        // Naay kulang sa form (pananglitan "155 of 162 done · 7 missing")? -> pwede i-edit aron mapuno
-        var progress = await ComputeProgressAsync(db, inspection);
-
-        if (approvalRoles.Count > 0 && approvalRoles.All(signedRoles.Contains) && !missingSignature && progress.IsComplete)
-            return (false, true,
-                "The Chief FSES and the City/Municipal Fire Marshal have already signed this inspection, so it can no longer be edited.");
-
-        return (true, signedRoles.Count > 0, "");
+            return (false, "This inspection no longer exists.");
+        if (inspection.LockedAt != null)
+            return (false, "This inspection is locked, so it can no longer be edited.");
+        return (true, "");
     }
 
-    public async Task<(bool Ok, string Message)> ReopenForEditAsync(string inspectionId)
+    // LOCK THIS INSPECTION: human niini dili na ma-edit (tubag, litrato, pirma).
+    // Gibantayan sa trigger sa seeds/lock.sql. Walay unlock.
+    // Kinahanglan na-Complete na una (kompleto ang form ug ang required nga pirma).
+    public async Task<(bool Ok, string Message)> LockInspectionAsync(string inspectionId)
     {
-        var (allowed, _, reason) = await CheckEditAsync(inspectionId);
-        if (!allowed)
-            return (false, reason);
-
         await using var db = await _database.OpenContextAsync();
-        var inspection = await db.Inspections.AsNoTracking().FirstAsync(i => i.Id == inspectionId);
-        if (inspection.Status == "DRAFT")
-            return (true, "");
-
-        var approvalRoles = await db.FormTemplateSignatories.AsNoTracking()
-            .Where(r => r.TemplateId == inspection.TemplateId && r.Stage == "APPROVAL")
-            .Select(r => r.RoleCode).ToListAsync();
-        var approvals = await db.InspectionSignatories
-            .Where(s => s.InspectionId == inspectionId && approvalRoles.Contains(s.RoleCode) && s.Status != "PENDING")
-            .ToListAsync();
-        foreach (var s in approvals)
-        {
-            s.Status = "PENDING";
-            s.SignaturePath = null;
-            s.SignatureSha256 = null;
-            s.SignedAt = null;
-            s.Decision = null;
-            s.RefusedReason = null;
-        }
-        await db.SaveChangesAsync();
+        var inspection = await db.Inspections.AsNoTracking().FirstOrDefaultAsync(i => i.Id == inspectionId);
+        if (inspection == null)
+            return (false, "This inspection no longer exists.");
+        if (inspection.LockedAt != null)
+            return (true, "This inspection is already locked.");
+        if (inspection.Status != "COMPLETED")
+            return (false, "Complete the inspection first (open it and tap \u201cComplete inspection\u201d in Sign-off), then lock it.");
 
         await db.Inspections
-            .Where(i => i.Id == inspectionId)
+            .Where(i => i.Id == inspectionId && i.LockedAt == null)
             .ExecuteUpdateAsync(s => s
-                .SetProperty(i => i.Status, "DRAFT")
-                .SetProperty(i => i.CompletedAt, (DateTime?)null)
+                .SetProperty(i => i.LockedAt, (DateTime?)DateTime.UtcNow)
                 .SetProperty(i => i.UpdatedAt, DateTime.UtcNow));
 
-        return (true, "The inspection is back in Draft.");
+        return (true, "The inspection is locked. It can no longer be edited.");
     }
 
     public static string? ReadSignatureFile(string? relativePath)

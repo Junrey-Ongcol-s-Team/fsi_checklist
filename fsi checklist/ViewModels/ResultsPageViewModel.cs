@@ -146,7 +146,8 @@ public sealed partial class ResultsPageViewModel : ObservableObject
 
             StatusText = i.Status != "COMPLETED"
                 ? "Draft (not completed yet)"
-                : signoff?.IsApproved == true ? "Completed" : "Awaiting approval";
+                : (signoff?.IsApproved == true ? "Completed" : "Awaiting approval")
+                    + (i.LockedAt != null ? " · Locked" : "");
 
             // ----- mga tubag + mga pirma: matag seksyon = usa ka ExpanderView -----
             var list = BuildAnswerRows(form);

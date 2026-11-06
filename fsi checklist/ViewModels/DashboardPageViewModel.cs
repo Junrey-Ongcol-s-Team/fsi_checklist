@@ -53,9 +53,14 @@ public sealed class DashboardRow
             _ => ("Completed", Color.FromArgb("#A8E6B0")),
         };
 
+        // LOCKED: "Lock this inspection" na-tap na, dili na ma-edit
+        IsLocked = item.IsLocked;
+        if (IsLocked)
+            StateText += " \U0001F512";
+
         FormIsFinished = complete;
         // Tanang text nga pwede pangitaon sa search bar, gamay nga letra.
-        SearchBlob = $"{item.OwnerName} {item.SubjectName} {item.TemplateName} {item.ReferenceNo} {StateText}".ToLowerInvariant();
+        SearchBlob = $"{item.OwnerName} {item.SubjectName} {item.TemplateName} {item.ReferenceNo} {StateText} {(IsLocked ? "locked" : "")}".ToLowerInvariant();
     }
 
     public string Id { get; }
@@ -69,6 +74,8 @@ public sealed class DashboardRow
     public Color ProgressColor { get; }
     public string ProgressText { get; }
     public bool FormIsFinished { get; }
+    public bool IsLocked { get; }
+    public bool CanEdit => !IsLocked;   // "Edit entries" makita ra kung dili locked
     public string SearchBlob { get; }
     public bool CanDelete => State is InspectionState.Draft or InspectionState.MissingSignature;
     public string AccessibilityText => $"{Title}, {SubTitle}, {StateText}, {ProgressText}";
@@ -212,9 +219,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject
         await Nav.GoAsync(route);
     }
 
-    // EDIT button sa card: draft = ablihan dayon ang form. Na-complete = ibalik sa Draft (pangutan-on una),
-    // pero kung naka-pirma na ang Chief FSES ug Fire Marshal ug kompleto ang pirma: alert ra, dili na pwede.
-    // Kung naay kulang nga pirma: pwede gihapon i-edit aron mapuno.
+    // EDIT ENTRIES button sa card: ablihan dayon ang form aron usbon ang tubag.
+    // Pwede KANUNAY (bisan na-Complete ug naka-pirma na ang Chief FSES ug Fire Marshal), gawas kung LOCKED.
     [RelayCommand]
     private async Task EditAsync(DashboardRow? row)
     {
@@ -222,29 +228,11 @@ public sealed partial class DashboardPageViewModel : ObservableObject
             return;
         try
         {
-            var (allowed, hasApproval, reason) = await _inspections.CheckEditAsync(row.Id);
+            var (allowed, reason) = await _inspections.CheckEditAsync(row.Id);
             if (!allowed)
             {
                 await Dialogs.ShowAsync("Can't edit", reason);
                 return;
-            }
-
-            if (row.State is InspectionState.Completed or InspectionState.AwaitingApproval)
-            {
-                string msg = "This inspection will go back to Draft so you can change the answers. "
-                    + "You'll need to complete it again afterwards.";
-                if (hasApproval)
-                    msg += "\n\nThe approval signature already on it (Chief FSES / Fire Marshal) will be removed. "
-                        + "A saved (pre-signed) Chief FSES signature is added again automatically when you complete it.";
-                if (!await Dialogs.ConfirmAsync("Edit this inspection?", msg, "Edit", "Cancel"))
-                    return;
-
-                var (ok, message) = await _inspections.ReopenForEditAsync(row.Id);
-                if (!ok)
-                {
-                    await Dialogs.ShowAsync("Can't edit", message);
-                    return;
-                }
             }
 
             await Nav.GoAsync($"{nameof(FormPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
@@ -253,6 +241,32 @@ public sealed partial class DashboardPageViewModel : ObservableObject
         {
             AppLog.Error(ex);
             await Dialogs.ShowAsync("Couldn't open for editing", AppLog.Describe(ex));
+        }
+    }
+
+    // LOCK THIS INSPECTION button sa card: pangutan-on una, dayon i-lock (dili na ma-edit, walay unlock).
+    [RelayCommand]
+    private async Task LockAsync(DashboardRow? row)
+    {
+        if (row == null || row.IsLocked)
+            return;
+        try
+        {
+            bool confirmed = await Dialogs.ConfirmAsync(
+                "Lock this inspection?",
+                $"After locking, “{row.Title}” can no longer be edited (answers, photos and signatures). This can't be undone.",
+                "Lock", "Cancel");
+            if (!confirmed)
+                return;
+
+            var (ok, message) = await _inspections.LockInspectionAsync(row.Id);
+            await Dialogs.ShowAsync(ok ? "Locked" : "Can't lock yet", message);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            await Dialogs.ShowAsync("Couldn't lock", AppLog.Describe(ex));
         }
     }
 

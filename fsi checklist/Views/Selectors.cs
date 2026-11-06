@@ -2,6 +2,7 @@
 // Mga 'selector': mopili kung unsang disenyo (DataTemplate) ang gamiton.
 // Pananglitan: Yes/No -> chips, petsa -> DatePicker, text -> Entry.
 // =====================================================================
+using fsi_checklist.Controls;
 using fsi_checklist.ViewModels;
 
 namespace fsi_checklist.Views;
@@ -34,7 +35,15 @@ public sealed class SlotTemplateSelector : DataTemplateSelector
 
     protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
     {
-        var template = ((SlotViewModel)item).Kind switch
+        var slot = (SlotViewModel)item;
+
+        // 1) KAUGALINGONG CONTROL SA FORM (Controls/<Form>/...), pananglitan FsicRenewalDateField
+        var own = FormControls.TemplateFor(slot);
+        if (own != null)
+            return own;
+
+        // 2) Kung wala: ang daan nga disenyo sa FormPage.xaml (backup)
+        var template = slot.Kind switch
         {
             SlotKind.LongText => LongTextTemplate,
             SlotKind.Number => NumberTemplate,

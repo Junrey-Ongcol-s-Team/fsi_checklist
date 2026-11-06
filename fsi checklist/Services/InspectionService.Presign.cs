@@ -5,9 +5,10 @@
 // Ang ilang pirma ma-save, dayon tawgon na lang kada inspection:
 //   - Pirma sa inspection (ON_SITE), pananglitan Inspector / Team Leader:
 //       awtomatik ibutang kung humana na ang form (DRAFT pa).
-//   - Pirma sa opisina (APPROVAL), pananglitan Chief FSES:
-//       awtomatik ibutang human ma-Complete ang inspection.
-//   - Fire Marshal: mo-pili lang og Approved / Disapproved; ang saved nga pirma ang gamiton.
+//   - Pirma sa opisina (APPROVAL): Chief FSES ug Fire Marshal (hepe):
+//       awtomatik ibutang dayon pag Complete sa inspection (sugyot ni Sir Junrey, aron dali).
+//       Ang Fire Marshal awtomatik "Approved". Kung wala pa sa Settings: mano-mano gihapon.
+//   - Kung LOCKED na ang inspection: wala nay ibutang.
 // Ang Owner / Representative ra ang mo-pirma og bag-o kada inspection.
 //
 // Asa gi-save:
@@ -91,7 +92,7 @@ public sealed partial class InspectionService
     {
         var pending = await db.InspectionSignatories
             .Where(s => s.InspectionId == inspection.Id && s.Status == "PENDING"
-                        && s.RoleCode != "OWNER_REP" && s.RoleCode != "FIRE_MARSHAL")
+                        && s.RoleCode != "OWNER_REP")
             .ToListAsync();
         if (pending.Count == 0)
             return;
@@ -100,7 +101,11 @@ public sealed partial class InspectionService
             .Where(r => r.TemplateId == inspection.TemplateId)
             .ToDictionaryAsync(r => r.RoleCode, r => r.Stage);
 
-        bool formDone = inspection.Status == "DRAFT" && (await ComputeProgressAsync(db, inspection)).IsComplete;
+        if (inspection.LockedAt != null)
+            return;   // locked: dili na usbon
+
+        // On-site: humana ang form (bisan na-Complete na). Opisina: human ma-Complete.
+        bool formDone = (await ComputeProgressAsync(db, inspection)).IsComplete;
         bool completed = inspection.Status == "COMPLETED";
         bool changed = false;
 
@@ -114,7 +119,9 @@ public sealed partial class InspectionService
             if (!saved.HasSignature)
                 continue;   // wala pa mo-pirma sa Settings: pwede gihapon mo-pirma og mano-mano
 
-            await StampSignatureAsync(sig, saved.Name, null, saved.StrokesJson!);
+            // Fire Marshal: awtomatik "APPROVED" (ang uban walay decision)
+            string? decision = sig.RoleCode == "FIRE_MARSHAL" ? "APPROVED" : null;
+            await StampSignatureAsync(sig, saved.Name, decision, saved.StrokesJson!);
             changed = true;
         }
 

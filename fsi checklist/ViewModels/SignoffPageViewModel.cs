@@ -94,6 +94,7 @@ public sealed partial class SignoffPageViewModel : ObservableObject
 
             bool isDraft = data.Status == "DRAFT";
             bool formDone = data.Progress.IsComplete;
+            bool locked = data.IsLocked;   // "Lock this inspection": dili na ma-edit
 
             Title = data.OwnerName;
             Subtitle = data.OwnerName == data.SubjectName
@@ -107,24 +108,27 @@ public sealed partial class SignoffPageViewModel : ObservableObject
                 : $"{data.Progress.Done} of {data.Progress.Total} done · {data.Progress.Missing} missing";
 
             StateText = !isDraft
-                ? (data.IsApproved ? "Completed" : "Awaiting approval")
+                ? (data.IsApproved ? "Completed" : "Awaiting approval") + (locked ? " · Locked" : "")
                 : formDone && data.MissingOnSite > 0 ? "Missing signature" : "Draft";
 
-            CanEditForm = isDraft;
+            // Pwede kanunay i-edit, gawas kung LOCKED
+            CanEditForm = !locked;
             // Ang 'Complete inspection' mugana ra kung DRAFT pa, humana ang form, ug kompleto ang pirma.
             CanComplete = isDraft && formDone && data.MissingOnSite == 0;
 
-            Hint = !isDraft
+            Hint = locked
+                ? "This inspection is locked. It can no longer be edited."
+                : !isDraft
                 ? (data.IsApproved
-                    ? "This inspection is complete."
-                    : "Completed and locked. Waiting for the approval signatures from the office.")
+                    ? "This inspection is complete. You can still edit it until it is locked (Dashboard \u2192 Lock this inspection)."
+                    : "Completed. Waiting for the approval signatures (no saved Chief FSES / Fire Marshal signature in Settings).")
                 : !formDone
                     ? $"Finish the form first: {data.Progress.Missing} items are still missing."
                     : data.MissingOnSite > 0
                         ? $"{data.MissingOnSite} signature(s) are still needed at the inspection."
-                        : "Everything is filled in and signed. Tap “Complete inspection” to lock it.";
+                        : "Everything is filled in and signed. Tap “Complete inspection”: the Chief FSES and Fire Marshal signatures are added automatically.";
 
-            var items = data.Signatories.Select(s => BuildItem(s, data.Status, formDone)).ToList();
+            var items = data.Signatories.Select(s => BuildItem(s, data.Status, formDone, locked)).ToList();
             OnSite = items.Where((_, i) => data.Signatories[i].Stage == "ON_SITE").ToList();
             Approval = items.Where((_, i) => data.Signatories[i].Stage == "APPROVAL").ToList();
             HasApproval = Approval.Count > 0;
@@ -137,7 +141,7 @@ public sealed partial class SignoffPageViewModel : ObservableObject
     }
 
     // Himoon ang usa ka linya sa pirma para sa screen, ug tinoon kung pwede na ba mo-pirma.
-    private static SignatoryItem BuildItem(SignatoryInfo s, string inspectionStatus, bool formDone)
+    private static SignatoryItem BuildItem(SignatoryInfo s, string inspectionStatus, bool formDone, bool locked)
     {
         bool signed = s.Status == "SIGNED";
         bool can = false;
@@ -145,10 +149,14 @@ public sealed partial class SignoffPageViewModel : ObservableObject
 
         if (!signed)
         {
-            if (s.Stage == "ON_SITE")
+            if (locked)
             {
-                if (inspectionStatus != "DRAFT") reason = "This inspection is already completed.";
-                else if (!formDone) reason = "Finish the form first.";
+                reason = "This inspection is locked.";
+            }
+            else if (s.Stage == "ON_SITE")
+            {
+                // Pwede gihapon bisan na-Complete na (pananglitan Fire Safety Inspector 2)
+                if (!formDone) reason = "Finish the form first.";
                 else can = true;
             }
             else
@@ -213,7 +221,8 @@ public sealed partial class SignoffPageViewModel : ObservableObject
     {
         bool confirmed = await Dialogs.ConfirmAsync(
             "Complete this inspection?",
-            "The answers will be locked and can no longer be changed.",
+            "The Chief FSES and Fire Marshal signatures will be added automatically (from Settings). "
+                + "You can still edit the entries until you lock the inspection on the Dashboard.",
             "Complete");
         if (!confirmed)
             return;

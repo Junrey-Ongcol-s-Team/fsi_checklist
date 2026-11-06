@@ -107,6 +107,8 @@ public sealed class Inspection
     public double? Longitude { get; set; }
     public string Status { get; set; } = "DRAFT";
     public DateTime? CompletedAt { get; set; }
+    // LOCKED: naay petsa = gi-lock na ("Lock this inspection"), dili na ma-edit (seeds/lock.sql)
+    public DateTime? LockedAt { get; set; }
     public string? Remarks { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

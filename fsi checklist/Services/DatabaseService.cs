@@ -63,6 +63,7 @@ public sealed class DatabaseService
         new("seeds/issuance.sql", "seed.issuance", 1),   // 061 ug 069: For Issuance of = usa ra ang mapili
         new("seeds/units.sql", "seed.units", 1),   // UNIT sa tanang numero nga field sa tanang forms (human sa tanang seeds)
         new("seeds/na_rule.sql", "seed.na_rule", 1),   // N/A: itago ang Capacity ug uban pa kung N/A ang parent
+        new("seeds/lock.sql", "seed.lock", 1),   // Lock this inspection: Edit pwede bisan Completed; LOCKED ra ang dili na ma-usab
     ];
 
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
