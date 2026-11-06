@@ -34,6 +34,9 @@ public sealed partial class SignaturePageViewModel : ObservableObject
     [ObservableProperty] private string roleLabel = "Signature";
     [ObservableProperty] private string printedName = string.Empty;
     [ObservableProperty] private bool needsDecision;
+
+    // ACKNOWLEDGEMENT: mabasa sa Owner / Representative sa dili pa mopirma.
+    [ObservableProperty] private bool isOwner;
     [ObservableProperty] private string? decision;
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasError))]
@@ -91,6 +94,8 @@ public sealed partial class SignaturePageViewModel : ObservableObject
             PrintedName = info.PrintedName;
             // Ang Fire Marshal ra ang mopili og Approved/Disapproved.
             NeedsDecision = info.RoleCode == "FIRE_MARSHAL";
+            // Ang Owner / Representative: ipakita ang ACKNOWLEDGEMENT sa ibabaw sa pirmahanan.
+            IsOwner = info.RoleCode == "OWNER_REP";
 
             // Taga-BFP nga naay pre-signed nga pirma: ipakita ang "Use saved signature" (dili na mag-drawing).
             if (info.RoleCode != "OWNER_REP")

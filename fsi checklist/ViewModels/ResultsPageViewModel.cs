@@ -30,15 +30,62 @@ public sealed class ResultRow
     public bool HasPhotos => PhotoPaths.Count > 0;
 }
 
+/// <summary>Usa ka seksyon sa results = usa ka ExpanderView (header = titulo + pila ang kulang, sulod = mga tubag).</summary>
+public sealed partial class ResultSection : ObservableObject
+{
+    public string Title { get; init; } = string.Empty;
+    public List<ResultRow> Items { get; } = new();
+
+    // Pila ang walay tubag (yellow) sulod niini nga seksyon.
+    public int Missing => Items.Count(r => r.IsUnanswered);
+    public bool HasMissing => Missing > 0;
+    public string MissingText => $"⚠ {Missing}";
+
+    // Sirado sa sugod; i-tap ang header aron moabli.
+    [ObservableProperty]
+    private bool isExpanded;
+}
+
 [QueryProperty(nameof(InspectionId), "inspectionId")]
 public sealed partial class ResultsPageViewModel : ObservableObject
 {
     private readonly InspectionService _inspections;
+    private readonly PrintService _print;
     private bool _loading;
 
-    public ResultsPageViewModel(InspectionService inspections)
+    public ResultsPageViewModel(InspectionService inspections, PrintService print)
     {
         _inspections = inspections;
+        _print = print;
+    }
+
+    // PRINT: pun-on ang tinuod nga BFP form ug ablihan sa Word / WPS para i-print.
+    [RelayCommand]
+    private async Task PrintAsync()
+    {
+        // DILI MA-PRINT kung draft pa o naay kulang (tan-awa ang CanPrint / PrintHint).
+        if (!CanPrint)
+        {
+            await Dialogs.ShowAsync("Can't print yet", PrintHint);
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            string? error = await _print.PrintAsync(InspectionId);
+            if (error != null)
+                await Dialogs.ShowAsync("Can't print", error);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            await Dialogs.ShowAsync("Couldn't print", AppLog.Describe(ex));
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     [ObservableProperty] private string inspectionId = string.Empty;
@@ -47,7 +94,13 @@ public sealed partial class ResultsPageViewModel : ObservableObject
     [ObservableProperty] private string detailLine = string.Empty;
     [ObservableProperty] private string statusText = string.Empty;
     [ObservableProperty] private bool isBusy;
-    [ObservableProperty] private List<ResultRow> rows = new();
+    [ObservableProperty] private List<ResultSection> sections = new();
+
+    // PRINT: pwede ra kung COMPLETED na ug walay kulang nga tubag.
+    [ObservableProperty] private bool canPrint;
+    [ObservableProperty] private string printHint = string.Empty;
+    public bool HasPrintHint => !CanPrint;
+    partial void OnCanPrintChanged(bool value) => OnPropertyChanged(nameof(HasPrintHint));
 
     partial void OnInspectionIdChanged(string value)
     {
@@ -95,11 +148,21 @@ public sealed partial class ResultsPageViewModel : ObservableObject
                 ? "Draft (not completed yet)"
                 : signoff?.IsApproved == true ? "Completed" : "Awaiting approval";
 
-            // ----- mga tubag + mga pirma -----
+            // ----- mga tubag + mga pirma: matag seksyon = usa ka ExpanderView -----
             var list = BuildAnswerRows(form);
             if (signoff != null)
                 list.AddRange(BuildSignatureRows(signoff));
-            Rows = list;
+            Sections = GroupBySection(list);
+
+            // ----- PRINT: COMPLETED ug walay kulang (pareho sa ihap sa progress bar sa Form) -----
+            int missing = CountMissing(form);
+            bool completed = i.Status == "COMPLETED";
+            CanPrint = completed && missing == 0;
+            PrintHint = !completed && missing > 0
+                ? $"Draft pa ug naay {missing} ka kulang nga tubag. Human-a ug i-sign-off una sa dili pa i-print."
+                : !completed
+                    ? "Draft pa (wala pa ma-sign-off). I-sign-off una sa dili pa i-print."
+                    : missing > 0 ? $"Naay {missing} ka kulang nga tubag. Human-a una sa dili pa i-print." : string.Empty;
         }
         catch (Exception ex)
         {
@@ -131,11 +194,9 @@ public sealed partial class ResultsPageViewModel : ObservableObject
         {
             if (string.IsNullOrEmpty(showIfItemId))
                 return true;
-            if (!answers.TryGetValue((showIfItemId, "value"), out var a) || a.ValueText == null)
-                return false;
-            return (showIfValues ?? string.Empty)
-                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                .Contains(a.ValueText, StringComparer.OrdinalIgnoreCase);
+            var (slot, values) = ShowIfRule.Parse(showIfValues);
+            answers.TryGetValue((showIfItemId, slot), out var a);
+            return ShowIfRule.Matches(a?.ValueText, values);
         }
 
         var rows = new List<ResultRow>();
@@ -148,8 +209,12 @@ public sealed partial class ResultsPageViewModel : ObservableObject
             var lines = new List<string>();
             bool anyMissing = false;
 
+            // N/A: kung "N/A" ang gipili sa Passed / Failed / N/A, dili na ipakita ang numero (dili kinahanglan).
+            bool naNumber = item.DataType is "NUMBER" or "INTEGER"
+                && answers.TryGetValue((item.Id, "result"), out var res) && res.ValueText == "NA";
+
             // Ang main nga tubag sa pangutana.
-            if (item.DataType != "NONE" && item.DataType != "PHOTO")
+            if (item.DataType != "NONE" && item.DataType != "PHOTO" && !naNumber)
             {
                 answers.TryGetValue((item.Id, "value"), out var a);
                 string text = Format(item.DataType, a, item.Id, item.Unit, choiceLabels);
@@ -167,14 +232,17 @@ public sealed partial class ResultsPageViewModel : ObservableObject
             if (item.ColumnSetId != null && columnsBySet.TryGetValue(item.ColumnSetId, out var columns))
             {
                 bool label = columns.Count > 1 || item.DataType != "NONE";
+                answers.TryGetValue((item.Id, "result"), out var resultAnswer);
                 foreach (var col in columns)
                 {
                     answers.TryGetValue((item.Id, col.Key), out var a);
                     string text = Format(col.DataType, a, col.Id, null, choiceLabels);
-                    if (a == null && col.DataType != "TEXT")
+                    // REMARKS kinahanglan kung FAILED
+                    bool remarksNeeded = ProgressCalculator.RemarksRequired(col.Key, resultAnswer?.ValueText);
+                    if (a == null && (col.DataType != "TEXT" || remarksNeeded))
                         anyMissing = true;
-                    // Ayaw ipakita ang blangko nga remarks.
-                    if (a == null && col.DataType == "TEXT")
+                    // Ayaw ipakita ang blangko nga remarks (gawas kung FAILED, kay kinahanglan kini).
+                    if (a == null && col.DataType == "TEXT" && !remarksNeeded)
                         continue;
                     lines.Add(label ? $"{col.Label}: {text}" : text);
                 }
@@ -214,6 +282,41 @@ public sealed partial class ResultsPageViewModel : ObservableObject
             AddSection(root);
 
         return rows;
+    }
+
+    // Ibahin ang mga row sa matag seksyon (ang ulohan sa seksyon = header sa ExpanderView).
+    private static List<ResultSection> GroupBySection(List<ResultRow> rows)
+    {
+        var sections = new List<ResultSection>();
+        ResultSection? current = null;
+        foreach (var r in rows)
+        {
+            if (r.IsSection)
+            {
+                current = new ResultSection { Title = r.Title };
+                sections.Add(current);
+                continue;
+            }
+            if (current == null)
+            {
+                current = new ResultSection { Title = "Answers" };
+                sections.Add(current);
+            }
+            current.Items.Add(r);
+        }
+        return sections.Where(s => s.Items.Count > 0).ToList();
+    }
+
+    // Pila ang kulang: pareho sa progress bar sa Form (ang nakatago ug optional dili iapil).
+    private static int CountMissing(FormData data)
+    {
+        var answers = data.Answers
+            .Where(a => a.RepeatNo == 0 && (a.ValueText != null || a.ValueNum != null))
+            .GroupBy(a => (a.ItemId, a.SlotKey))
+            .ToDictionary(g => g.Key, g => g.First().ValueText ?? string.Empty);
+        var columnsBySet = data.Columns.GroupBy(c => c.ColumnSetId)
+            .ToDictionary(g => g.Key, g => g.OrderBy(c => c.SortOrder).ToList());
+        return ProgressCalculator.Compute(data.Items, columnsBySet, answers).Missing;
     }
 
     // Himoon nga mabasa sa tawo ang tubag: YES -> Yes, PASS -> Passed, CHOICE value -> iyang label, ug uban pa.

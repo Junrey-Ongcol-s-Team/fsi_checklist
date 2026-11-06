@@ -32,10 +32,23 @@
 
 		<!-- App Identifier -->
 		<ApplicationId>com.companyname.fsichecklist</ApplicationId>
+		<!-- ANDROID APK: kaugalingon nga ngalan sa app sa phone (ang Windows dili usbon aron dili mabalhin ang database sa laptop) -->
+		<ApplicationId Condition="$(TargetFramework.Contains('-android'))">com.bfp.fsichecklist</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<ApplicationVersion>1</ApplicationVersion>
+
+		<!-- ANDROID RELEASE: .apk (dili .aab) aron ma-install direkta sa phone. -->
+		<!-- TrimMode partial: dili tangtangon ang code nga gikinahanglan sa EF Core / SQLite (aron dili mo-crash ang Release). -->
+		<AndroidPackageFormat Condition="'$(Configuration)' == 'Release'">apk</AndroidPackageFormat>
+		<TrimMode Condition="'$(Configuration)' == 'Release'">partial</TrimMode>
+		<!-- GAAN NGA BUILD: walay AOT sa Android Release aron dili mahurot ang RAM sa laptop (mo-hang/crash ang Publish). -->
+		<!-- (x64 gikuha sa RuntimeIdentifiers: para ra kana sa emulator; ang tablet/phone kay arm/arm64.) -->
+		<RunAOTCompilation Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">false</RunAOTCompilation>
+		<AndroidEnableProfiledAot Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">false</AndroidEnableProfiledAot>
+		<!-- Para sa daan nga tablet/phone (32-bit ARM) ug bag-o (64-bit). Kung wala ang android-arm: "package appears to be invalid" sa daan nga tablet. -->
+		<RuntimeIdentifiers Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">android-arm;android-arm64</RuntimeIdentifiers>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -49,10 +62,12 @@
 
 	<ItemGroup>
 		<!-- App Icon -->
-		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#512BD4" />
+		<!-- BFP icon: navy background + bfpicon.png (walay gold border). 0.58 aron dili maputol ang "BFP INSPECTION" sa lingin nga icon sa Android. -->
+		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\bfpicon.png" ForegroundScale="0.58" Color="#0A2A5C" />
 
 		<!-- Splash Screen -->
-		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#512BD4" BaseSize="128,128" />
+		<!-- Ang system splash: navy ra (walay .NET logo); ang BFP banner naa sa Views/SplashPage.cs -->
+		<MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0B2F66" BaseSize="128,128" />
 
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
@@ -70,6 +85,7 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="15.0.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="UraniumUI.Material" Version="3.0.0" />
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.13" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="10.0.120" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.13" />
@@ -86,5 +102,14 @@
 	<ItemGroup>
 	  <Folder Include="Data\Models\" />
 	</ItemGroup>
+
+	<!--
+	    BISAYA: sa PINAKASUGOD sa build sa Windows (BeforeBuild, una sa pag-copy sa .exe), i-close ang daan nga "fsi checklist.exe" kung nagdagan pa.
+	    Kung dili, mo-error ang build: "The file is locked by: fsi checklist.exe".
+	    (Walay epekto sa Android. Ang database dili maguba: ang SQLite WAL luwas bisan i-close dayon.)
+	-->
+	<Target Name="CloseRunningApp" BeforeTargets="BeforeBuild" Condition="'$(OS)' == 'Windows_NT' And $(TargetFramework.Contains('-windows'))">
+		<Exec Command="taskkill /F /IM &quot;fsi checklist.exe&quot; &gt;nul 2&gt;&amp;1" ContinueOnError="true" IgnoreExitCode="true" />
+	</Target>
 
 </Project>

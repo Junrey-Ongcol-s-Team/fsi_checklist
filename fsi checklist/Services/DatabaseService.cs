@@ -27,14 +27,42 @@ public sealed class DatabaseService
     [
         new("seeds/064.sql", "seed.064", 1),
         new("seeds/051.sql", "seed.051", 1),
+        new("seeds/051b.sql", "seed.051b", 1),   // Conveyance clearance: "Prohibited Acts" (2 ka linya ra)
         new("seeds/061.sql", "seed.061", 1),
+        new("seeds/061b.sql", "seed.061b", 1),   // New FSIC/occupancy: Nature usa ra; FSIC for Occupancy / New BP ug ang ilang fields
+        new("seeds/061c.sql", "seed.061c", 1),   // New FSIC/occupancy: ang fields sa gipili kinahanglan ma-fill up (circle progress)
+        new("seeds/061d.sql", "seed.061d", 1),   // New FSIC/occupancy: Sectional occupancy = ExpanderView
+        new("seeds/061e.sql", "seed.061e", 1),   // New FSIC/occupancy: Means of egress A/B/C = ExpanderView; Sectional required
+        new("seeds/061f.sql", "seed.061f", 1),   // New FSIC/occupancy: Signs, lighting and exits signage A/B/C = ExpanderView
+        new("seeds/061g.sql", "seed.061g", 1),   // New FSIC/occupancy: Requirements = usa ra (Occupancy / New BP) + ExpanderView
+        new("seeds/061h.sql", "seed.061h", 1),   // New FSIC/occupancy: unit sa matag numero (m, persons, storey, mm, lux ...)
+        new("seeds/061i.sql", "seed.061i", 1),   // New FSIC/occupancy: Hazard A/B/C = ExpanderView
+        new("seeds/061j.sql", "seed.061j", 1),   // New FSIC/occupancy: V. Fire protection A - K = ExpanderView
+        new("seeds/061k.sql", "seed.061k", 1),   // New FSIC/occupancy: Fire Safety Inspector 2 (optional) para sa ikaduha nga linya
+        new("seeds/061l.sql", "seed.061l", 1),   // New FSIC/occupancy: Defects Item I-V tagsa-tagsa (dili moagas sa sunod nga Item)
         new("seeds/068.sql", "seed.068", 1),
+        new("seeds/068b.sql", "seed.068b", 1),   // During construction: General information = expander; Other % mogawas ra kung "At other %"
+        new("seeds/068c.sql", "seed.068c", 2),   // During construction: I. Means of egress = expander ang matag numero
+        new("seeds/068d.sql", "seed.068d", 1),   // During construction: Defects Item I-VII tagsa-tagsa (dili moagas sa sunod nga Item)
         new("seeds/069.sql", "seed.069", 1),
+        new("seeds/069b.sql", "seed.069b", 1),   // FSIC renewal: dugang nga mga kahon aron kompleto sama sa form
+        new("seeds/069c.sql", "seed.069c", 1),   // FSIC renewal: Nature of inspection = usa ra ang mapili
+        new("seeds/069d.sql", "seed.069d", 2),   // FSIC renewal: gisulat ang "Previous After Inspection Report" ug "Present/Actual Inspection"
+        new("seeds/069e.sql", "seed.069e", 1),   // FSIC renewal: kung "No changes", wala nay laing kahon; mogawas ra kung "With changes"
+        new("seeds/069f.sql", "seed.069f", 1),   // FSIC renewal: han-ay sama sa form (wala -> Previous -> Present -> With changes)
+        new("seeds/069g.sql", "seed.069g", 1),   // FSIC renewal: Type of occupancy = picker; Special Structure -> Please specify
         new("seeds/075.sql", "seed.075", 1),
+        new("seeds/075b.sql", "seed.075b", 1),   // Pipelines: "Prohibited Acts" sama sa form (pahibalo lang, walay kahon)
         new("seeds/024.sql", "seed.024", 1),
+        new("seeds/024b.sql", "seed.024b", 1),   // Small business: Defects Item IV-VIII tagsa-tagsa (dili moagas sa sunod nga Item)
         new("seeds/021.sql", "seed.021", 1),
         new("seeds/026.sql", "seed.026", 1),
         new("seeds/006.sql", "seed.006", 1),
+        new("seeds/clearances.sql", "seed.clearances", 2),   // 061 ug 069: Fire Safety Clearance/s = chips (mogawas ra kung naka-check)
+        new("seeds/na_text.sql", "seed.na_text", 1),   // N/A sa Fire Drill / Fire Insurance: ang date issued mawala ug "N/A" sa print
+        new("seeds/issuance.sql", "seed.issuance", 1),   // 061 ug 069: For Issuance of = usa ra ang mapili
+        new("seeds/units.sql", "seed.units", 1),   // UNIT sa tanang numero nga field sa tanang forms (human sa tanang seeds)
+        new("seeds/na_rule.sql", "seed.na_rule", 1),   // N/A: itago ang Capacity ug uban pa kung N/A ang parent
     ];
 
     private readonly IDbContextFactory<AppDbContext> _contextFactory;

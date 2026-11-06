@@ -33,6 +33,15 @@ public sealed partial class NewInspectionViewModel : ObservableObject
     [ObservableProperty] private string contactNo = string.Empty;
     [ObservableProperty] private string referenceNo = string.Empty;
     [ObservableProperty] private DateTime dateInspected = DateTime.Today;
+
+    // CONTACT NUMBER: numero ra ang madawat (ang letra, space, - ug uban pa kay tangtangon dayon),
+    // ug hangtod 11 ra ka numero (pananglitan 09171234567).
+    partial void OnContactNoChanged(string value)
+    {
+        string digits = new string((value ?? string.Empty).Where(c => c >= '0' && c <= '9').Take(11).ToArray());
+        if (digits != value)
+            ContactNo = digits;
+    }
     [ObservableProperty] private bool isBusy;
     [ObservableProperty] private bool hasNoTemplates;
 
@@ -89,6 +98,13 @@ public sealed partial class NewInspectionViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(SubjectName))
         {
             await Dialogs.ShowAsync("Missing name", $"Enter the {SubjectLabel.ToLowerInvariant()}.");
+            return;
+        }
+
+        // Kung naay contact number, kinahanglan eksakto 11 ka numero.
+        if (ContactNo.Length > 0 && ContactNo.Length != 11)
+        {
+            await Dialogs.ShowAsync("Contact number", "The contact number must have exactly 11 digits (example: 09171234567).");
             return;
         }
 

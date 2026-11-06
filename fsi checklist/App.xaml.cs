@@ -10,11 +10,15 @@ namespace fsi_checklist
         public App(DatabaseService databaseService)
         {
             InitializeComponent();
+
+            // Pirmi daylight (light mode), bisan naka-dark ang Windows o ang phone.
+            UserAppTheme = AppTheme.Light;
         }
 
+        // SPLASH: una ang BFP banner (Views/SplashPage.cs), dayon ang AppShell human sa 2 segundos.
         protected override Window CreateWindow(IActivationState? activationState)
         {
-            return new Window(new AppShell());
+            return new Window(new Views.SplashPage());
         }
     }
 }

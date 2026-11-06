@@ -195,17 +195,29 @@
                                         FontSize="12"
                                         Text="{Binding ProgressText}"
                                         TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
-                                    <!--  VIEW RESULTS sa matag inspection (bisan draft)  -->
-                                    <Button
+                                    <!--  VIEW RESULTS ug EDIT sa matag inspection  -->
+                                    <HorizontalStackLayout
                                         Grid.Row="5"
                                         Grid.ColumnSpan="2"
                                         Margin="0,6,0,0"
-                                        Clicked="OnViewResultsClicked"
-                                        FontSize="13"
-                                        HeightRequest="36"
-                                        HorizontalOptions="Start"
-                                        Padding="14,0"
-                                        Text="View results" />
+                                        Spacing="8">
+                                        <Button
+                                            Clicked="OnViewResultsClicked"
+                                            FontSize="13"
+                                            HeightRequest="36"
+                                            Padding="14,0"
+                                            Text="View results" />
+                                        <Button
+                                            BackgroundColor="Transparent"
+                                            BorderColor="{StaticResource Primary}"
+                                            BorderWidth="1"
+                                            Clicked="OnEditClicked"
+                                            FontSize="13"
+                                            HeightRequest="36"
+                                            Padding="14,0"
+                                            Text="Edit"
+                                            TextColor="{StaticResource Primary}" />
+                                    </HorizontalStackLayout>
                                 </Grid>
                             </Border>
                         </SwipeView>

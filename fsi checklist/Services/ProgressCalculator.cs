@@ -33,6 +33,11 @@ public static class ProgressCalculator
     /// <summary>Extra columns (Yes/No, Passed/Failed...) count; free-text remarks do not.</summary>
     public static bool ColumnSlotCounts(FormColumn column) => ChoiceTypes.Contains(column.DataType);
 
+    // REMARKS: kinahanglan kung FAILED ang tubag (Passed = optional, N/A = walay kinahanglan).
+    /// <summary>The remarks column becomes required when the item's result is FAIL.</summary>
+    public static bool RemarksRequired(string slotKey, string? result) =>
+        slotKey == "remarks" && string.Equals(result, "FAIL", StringComparison.OrdinalIgnoreCase);
+
     /// <param name="answers">(item id, slot key) of every answered slot; the value is its stored text ("" for numbers).</param>
     public static ProgressResult Compute(
         IReadOnlyCollection<FormItem> items,
@@ -55,10 +60,10 @@ public static class ProgressCalculator
             {
                 if (!string.IsNullOrEmpty(item.ShowIfItemId))
                 {
-                    visible = answers.TryGetValue((item.ShowIfItemId, "value"), out var current)
-                        && (item.ShowIfValues ?? string.Empty)
-                            .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
-                            .Contains(current, StringComparer.OrdinalIgnoreCase);
+                    // Mahimo nga value o column (pananglitan "change_status:WITH_CHANGES") ang tan-awon.
+                    var (slot, values) = ShowIfRule.Parse(item.ShowIfValues);
+                    answers.TryGetValue((item.ShowIfItemId, slot), out var current);
+                    visible = ShowIfRule.Matches(current, values);
                 }
 
                 if (visible && item.ParentItemId != null && byId.TryGetValue(item.ParentItemId, out var parent))
@@ -86,9 +91,10 @@ public static class ProgressCalculator
 
             if (item.ColumnSetId != null && columnsBySet.TryGetValue(item.ColumnSetId, out var columns))
             {
+                answers.TryGetValue((item.Id, "result"), out var result);
                 foreach (var column in columns)
                 {
-                    if (!ColumnSlotCounts(column))
+                    if (!ColumnSlotCounts(column) && !RemarksRequired(column.Key, result))
                         continue;
 
                     total++;

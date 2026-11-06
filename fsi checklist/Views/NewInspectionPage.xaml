@@ -38,8 +38,12 @@
             <Label FontSize="12" Text="Owner / representative" />
             <Entry Text="{Binding OwnerName}" />
 
-            <Label FontSize="12" Text="Contact number" />
-            <Entry Keyboard="Telephone" Text="{Binding ContactNo}" />
+            <!--  Contact number: numero ra, 11 ka numero (ang letra dili madawat)  -->
+            <Label FontSize="12" Text="Contact number (11 digits)" />
+            <Entry
+                Keyboard="Telephone"
+                Placeholder="09XXXXXXXXX"
+                Text="{Binding ContactNo}" />
 
             <Label FontSize="12" Text="Inspection order / control no." />
             <Entry Text="{Binding ReferenceNo}" />

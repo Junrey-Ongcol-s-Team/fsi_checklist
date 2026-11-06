@@ -350,6 +350,81 @@ public sealed partial class InspectionService
         return (true, "Inspection completed.");
     }
 
+    // EDIT sa na-complete nga inspection:
+    //   Dili na pwede kung naka-pirma na ang tanang head sa APPROVAL (Chief FSES ug Fire Marshal)
+    //   UG kompleto na ang tanang pirma ug ang form. Kung naay kulang nga pirma (pananglitan Inspector 2)
+    //   o kulang sa form (pananglitan "7 missing"): pwede gihapon i-edit aron mapuno.
+    //   Kung pwede: ibalik sa DRAFT (ma-usab na ang tubag). Ang pirma sa approval nga naa na (pananglitan
+    //   ang Chief FSES nga pre-signed) tangtangon, kay usbon man ang sulod; mobalik kini pag Complete.
+    //   Ang pirma sa on-site (Owner, Inspector, Team Leader) magpabilin.
+    public async Task<(bool Allowed, bool HasApprovalSignature, string Reason)> CheckEditAsync(string inspectionId)
+    {
+        await using var db = await _database.OpenContextAsync();
+        var inspection = await db.Inspections.AsNoTracking().FirstOrDefaultAsync(i => i.Id == inspectionId);
+        if (inspection == null)
+            return (false, false, "This inspection no longer exists.");
+        if (inspection.Status == "DRAFT")
+            return (true, false, "");
+
+        var approvalRoles = await db.FormTemplateSignatories.AsNoTracking()
+            .Where(r => r.TemplateId == inspection.TemplateId && r.Stage == "APPROVAL")
+            .Select(r => r.RoleCode).ToListAsync();
+        var signedRoles = await db.InspectionSignatories.AsNoTracking()
+            .Where(s => s.InspectionId == inspectionId && s.Status == "SIGNED" && approvalRoles.Contains(s.RoleCode))
+            .Select(s => s.RoleCode).Distinct().ToListAsync();
+
+        // Naay kulang nga pirma (bisan optional, pananglitan Fire Safety Inspector 2)? -> pwede i-edit
+        bool missingSignature = await db.InspectionSignatories.AsNoTracking()
+            .AnyAsync(s => s.InspectionId == inspectionId && s.Status == "PENDING");
+
+        // Naay kulang sa form (pananglitan "155 of 162 done · 7 missing")? -> pwede i-edit aron mapuno
+        var progress = await ComputeProgressAsync(db, inspection);
+
+        if (approvalRoles.Count > 0 && approvalRoles.All(signedRoles.Contains) && !missingSignature && progress.IsComplete)
+            return (false, true,
+                "The Chief FSES and the City/Municipal Fire Marshal have already signed this inspection, so it can no longer be edited.");
+
+        return (true, signedRoles.Count > 0, "");
+    }
+
+    public async Task<(bool Ok, string Message)> ReopenForEditAsync(string inspectionId)
+    {
+        var (allowed, _, reason) = await CheckEditAsync(inspectionId);
+        if (!allowed)
+            return (false, reason);
+
+        await using var db = await _database.OpenContextAsync();
+        var inspection = await db.Inspections.AsNoTracking().FirstAsync(i => i.Id == inspectionId);
+        if (inspection.Status == "DRAFT")
+            return (true, "");
+
+        var approvalRoles = await db.FormTemplateSignatories.AsNoTracking()
+            .Where(r => r.TemplateId == inspection.TemplateId && r.Stage == "APPROVAL")
+            .Select(r => r.RoleCode).ToListAsync();
+        var approvals = await db.InspectionSignatories
+            .Where(s => s.InspectionId == inspectionId && approvalRoles.Contains(s.RoleCode) && s.Status != "PENDING")
+            .ToListAsync();
+        foreach (var s in approvals)
+        {
+            s.Status = "PENDING";
+            s.SignaturePath = null;
+            s.SignatureSha256 = null;
+            s.SignedAt = null;
+            s.Decision = null;
+            s.RefusedReason = null;
+        }
+        await db.SaveChangesAsync();
+
+        await db.Inspections
+            .Where(i => i.Id == inspectionId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(i => i.Status, "DRAFT")
+                .SetProperty(i => i.CompletedAt, (DateTime?)null)
+                .SetProperty(i => i.UpdatedAt, DateTime.UtcNow));
+
+        return (true, "The inspection is back in Draft.");
+    }
+
     public static string? ReadSignatureFile(string? relativePath)
     {
         if (string.IsNullOrEmpty(relativePath))

@@ -32,8 +32,10 @@ public sealed record PresignInfo(string RoleCode, string RoleLabel, string Name,
 public sealed partial class InspectionService
 {
     // Ang mga role nga pwede mag pre-sign (tanan gawas sa Owner / Representative).
+    // INSPECTOR_2 = Fire Safety Inspector 2 (061: ikaduha nga linya sa "Fire Safety Inspector/s").
+    //   Kung naa sa Settings: awtomatiko ibutang sa 061 inspection; kung wala: pwede gihapon mano-mano o blangko.
     public static readonly string[] PresignRoles =
-        { "INSPECTOR", "TEAM_LEADER", "BUILDING_PLAN_EVALUATOR", "CHIEF_FSES", "FIRE_MARSHAL" };
+        { "INSPECTOR", "INSPECTOR_2", "TEAM_LEADER", "BUILDING_PLAN_EVALUATOR", "CHIEF_FSES", "FIRE_MARSHAL" };
 
     private static string PresignNameKey(string role) => $"presign.{role}.name";
     private static string PresignFile(string role) => Path.Combine("signatures", $"presign-{role}.json");

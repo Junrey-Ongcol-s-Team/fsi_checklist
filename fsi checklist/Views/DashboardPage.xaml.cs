@@ -30,6 +30,13 @@ public partial class DashboardPage : ContentPage
             await fsi_checklist.Services.Nav.GoAsync($"{nameof(ResultsPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
     }
 
+    // EDIT button sa card (alert kung naka-pirma na ang Chief FSES ug Fire Marshal).
+    private async void OnEditClicked(object? sender, EventArgs e)
+    {
+        if ((sender as BindableObject)?.BindingContext is DashboardRow row)
+            await _viewModel.EditCommand.ExecuteAsync(row);
+    }
+
     // SWIPE -> DELETE: kuhaon ang card nga gi-swipe, dayon ipadala sa DeleteCommand sa ViewModel.
     private async void OnDeleteInvoked(object? sender, EventArgs e)
     {

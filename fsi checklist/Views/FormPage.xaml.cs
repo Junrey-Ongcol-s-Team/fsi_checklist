@@ -17,6 +17,8 @@ public partial class FormPage : ContentPage
         // Kung mag-tap og 'Next missing', mo-scroll sa kulang nga item.
         _viewModel.ScrollToRowRequested += async index =>
         {
+            // Gamay nga hulat aron ma-layout una ang bag-ong naabli nga expander.
+            await Task.Delay(100);
             if (index >= 0 && index < RowsLayout.Children.Count && RowsLayout.Children[index] is Element target)
                 await FormScroll.ScrollToAsync(target, ScrollToPosition.Start, true);
         };

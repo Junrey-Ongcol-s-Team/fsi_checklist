@@ -32,6 +32,28 @@
             Text="{Binding RoleLabel}" />
 
         <VerticalStackLayout Grid.Row="1" Spacing="6">
+            <!--  ACKNOWLEDGEMENT: mabasa sa Owner / Representative sa dili pa mopirma (makita ra para sa Owner)  -->
+            <Border
+                Padding="12,10"
+                BackgroundColor="{AppThemeBinding Light=#FFF8E1, Dark=#2A2416}"
+                IsVisible="{Binding IsOwner}"
+                Stroke="#F9A825"
+                StrokeShape="RoundRectangle 10"
+                StrokeThickness="1">
+                <VerticalStackLayout Spacing="6">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="15"
+                        HorizontalOptions="Center"
+                        Text="ACKNOWLEDGEMENT" />
+                    <Label
+                        FontSize="14"
+                        HorizontalTextAlignment="Justify"
+                        LineBreakMode="WordWrap"
+                        Text="This is to acknowledge that permission was granted to the above-named Fire Safety Inspector/s accompanied by authorized representative to conduct Fire Safety Inspection within the premises in accordance with law." />
+                </VerticalStackLayout>
+            </Border>
+
             <Label FontSize="12" Text="Printed name" />
             <Entry Placeholder="Full name" Text="{Binding PrintedName}" />
 

@@ -12,7 +12,9 @@ public partial class SettingsPage : ContentPage
 
     public SettingsPage(SettingsViewModel viewModel)
     {
-        InitializeComponent();
+        // Gi-log ang error sa pag-load sa XAML aron makita ang tinuod nga hinungdan sa crash.
+        try { InitializeComponent(); }
+        catch (Exception ex) { AppLog.Error(ex, "SettingsPage XAML"); throw; }
         BindingContext = _viewModel = viewModel;
     }
 

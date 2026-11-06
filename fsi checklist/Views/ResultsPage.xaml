@@ -6,7 +6,64 @@
     x:Class="fsi_checklist.Views.ResultsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
     Title="Results">
+
+    <ContentPage.Resources>
+        <!--  Usa ka pangutana ug ang tubag (sulod sa ExpanderView sa seksyon)  -->
+        <DataTemplate x:Key="ResultItemTemplate">
+            <Border
+                Margin="{Binding Margin}"
+                Padding="12,10"
+                BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
+                StrokeShape="RoundRectangle 10"
+                StrokeThickness="1">
+                <Border.Triggers>
+                    <!--  Dilaw nga frame kung wala'y tubag  -->
+                    <DataTrigger
+                        Binding="{Binding IsUnanswered}"
+                        TargetType="Border"
+                        Value="True">
+                        <Setter Property="Stroke" Value="#F9A825" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <VerticalStackLayout Spacing="4">
+                    <Label FontSize="14" Text="{Binding Title}" />
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="14"
+                        Text="{Binding Answer}" />
+                    <!--  Mga litrato sa pangutana  -->
+                    <FlexLayout
+                        BindableLayout.ItemsSource="{Binding PhotoPaths}"
+                        IsVisible="{Binding HasPhotos}"
+                        Wrap="Wrap">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate>
+                                <!--  I-tap ang litrato para makita og dako  -->
+                                <Image
+                                    Margin="0,0,8,8"
+                                    Aspect="AspectFill"
+                                    HeightRequest="120"
+                                    Source="{Binding .}"
+                                    WidthRequest="120">
+                                    <Image.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPhotoTapped" />
+                                    </Image.GestureRecognizers>
+                                </Image>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                    <!--  Hulagway sa pirma (para sa Signatures ra)  -->
+                    <GraphicsView
+                        Drawable="{Binding Signature}"
+                        HeightRequest="70"
+                        IsVisible="{Binding HasSignature}" />
+                </VerticalStackLayout>
+            </Border>
+        </DataTemplate>
+    </ContentPage.Resources>
 
     <Grid RowDefinitions="Auto,*">
 
@@ -29,82 +86,76 @@
                 FontAttributes="Bold"
                 FontSize="13"
                 Text="{Binding StatusText}" />
+
+            <!--  PRINT: pun-on ang BFP form ug ablihan para i-print. Mogana ra kung COMPLETED ug walay kulang.  -->
+            <Button
+                Margin="0,8,0,0"
+                Command="{Binding PrintCommand}"
+                CornerRadius="12"
+                FontAttributes="Bold"
+                HeightRequest="48"
+                IsEnabled="{Binding CanPrint}"
+                Text="Print form" />
+            <Label
+                FontSize="12"
+                IsVisible="{Binding HasPrintHint}"
+                Text="{Binding PrintHint}"
+                TextColor="#E65100" />
         </VerticalStackLayout>
 
-        <!--  ANG MGA TUBAG: CollectionView aron paspas bisan daghan og pangutana  -->
-        <CollectionView
-            Grid.Row="1"
-            Margin="12,0"
-            ItemsSource="{Binding Rows}"
-            SelectionMode="None">
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Grid Padding="0,0,0,8">
-
-                        <!--  Ulohan sa seksyon  -->
-                        <Label
-                            Margin="0,12,0,0"
-                            FontAttributes="Bold"
-                            FontSize="18"
-                            IsVisible="{Binding IsSection}"
-                            Text="{Binding Title}" />
-
-                        <!--  Usa ka pangutana ug ang tubag  -->
+        <!--  ANG MGA TUBAG: matag seksyon = usa ka ExpanderView (sirado sa sugod), aron dali makita ang gusto tan-awon  -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout
+                Padding="12,4,12,24"
+                BindableLayout.ItemsSource="{Binding Sections}"
+                Spacing="10">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate>
                         <Border
-                            Margin="{Binding Margin}"
-                            Padding="12,10"
-                            BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}"
-                            IsVisible="{Binding IsItem}"
+                            BackgroundColor="{AppThemeBinding Light=#FAFAFA, Dark=#181818}"
                             Stroke="{AppThemeBinding Light=#E0E0E0, Dark=#3C3C3C}"
-                            StrokeShape="RoundRectangle 10"
+                            StrokeShape="RoundRectangle 14"
                             StrokeThickness="1">
                             <Border.Triggers>
-                                <!--  Dilaw nga frame kung wala'y tubag  -->
+                                <!--  Dilaw kung naay kulang sulod niini nga seksyon  -->
                                 <DataTrigger
-                                    Binding="{Binding IsUnanswered}"
+                                    Binding="{Binding HasMissing}"
                                     TargetType="Border"
                                     Value="True">
                                     <Setter Property="Stroke" Value="#F9A825" />
+                                    <Setter Property="StrokeThickness" Value="2" />
                                 </DataTrigger>
                             </Border.Triggers>
-                            <VerticalStackLayout Spacing="4">
-                                <Label FontSize="14" Text="{Binding Title}" />
-                                <Label
-                                    FontAttributes="Bold"
-                                    FontSize="14"
-                                    Text="{Binding Answer}" />
-                                <!--  Mga litrato sa pangutana  -->
-                                <FlexLayout
-                                    BindableLayout.ItemsSource="{Binding PhotoPaths}"
-                                    IsVisible="{Binding HasPhotos}"
-                                    Wrap="Wrap">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate>
-                                            <!--  I-tap ang litrato para makita og dako  -->
-                                            <Image
-                                                Margin="0,0,8,8"
-                                                Aspect="AspectFill"
-                                                HeightRequest="120"
-                                                Source="{Binding .}"
-                                                WidthRequest="120">
-                                                <Image.GestureRecognizers>
-                                                    <TapGestureRecognizer Tapped="OnPhotoTapped" />
-                                                </Image.GestureRecognizers>
-                                            </Image>
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </FlexLayout>
-                                <!--  Hulagway sa pirma (para sa Signatures ra)  -->
-                                <GraphicsView
-                                    Drawable="{Binding Signature}"
-                                    HeightRequest="70"
-                                    IsVisible="{Binding HasSignature}" />
-                            </VerticalStackLayout>
+                            <uranium:ExpanderView IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                                <uranium:ExpanderView.Header>
+                                    <!--  Titulo sa seksyon + pila ang kulang  -->
+                                    <Grid Padding="14,12" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                        <Label
+                                            FontAttributes="Bold"
+                                            FontSize="16"
+                                            Text="{Binding Title}"
+                                            VerticalOptions="Center" />
+                                        <Label
+                                            Grid.Column="1"
+                                            FontAttributes="Bold"
+                                            FontSize="13"
+                                            IsVisible="{Binding HasMissing}"
+                                            Text="{Binding MissingText}"
+                                            TextColor="#E65100"
+                                            VerticalOptions="Center" />
+                                    </Grid>
+                                </uranium:ExpanderView.Header>
+                                <VerticalStackLayout
+                                    Padding="10,0,10,12"
+                                    BindableLayout.ItemTemplate="{StaticResource ResultItemTemplate}"
+                                    BindableLayout.ItemsSource="{Binding Items}"
+                                    Spacing="8" />
+                            </uranium:ExpanderView>
                         </Border>
-                    </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </VerticalStackLayout>
+        </ScrollView>
 
         <ActivityIndicator
             Grid.Row="1"

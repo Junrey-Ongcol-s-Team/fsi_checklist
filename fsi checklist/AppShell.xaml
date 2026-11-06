@@ -7,6 +7,9 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:fsi_checklist"
+    BackgroundColor="{StaticResource Primary}"
+    ForegroundColor="White"
+    TitleColor="White"
     Title="BFP Fire System Checklist Inspection">
 
     <ShellContent

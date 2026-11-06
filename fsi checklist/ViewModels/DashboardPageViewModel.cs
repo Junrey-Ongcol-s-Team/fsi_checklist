@@ -212,6 +212,50 @@ public sealed partial class DashboardPageViewModel : ObservableObject
         await Nav.GoAsync(route);
     }
 
+    // EDIT button sa card: draft = ablihan dayon ang form. Na-complete = ibalik sa Draft (pangutan-on una),
+    // pero kung naka-pirma na ang Chief FSES ug Fire Marshal ug kompleto ang pirma: alert ra, dili na pwede.
+    // Kung naay kulang nga pirma: pwede gihapon i-edit aron mapuno.
+    [RelayCommand]
+    private async Task EditAsync(DashboardRow? row)
+    {
+        if (row == null)
+            return;
+        try
+        {
+            var (allowed, hasApproval, reason) = await _inspections.CheckEditAsync(row.Id);
+            if (!allowed)
+            {
+                await Dialogs.ShowAsync("Can't edit", reason);
+                return;
+            }
+
+            if (row.State is InspectionState.Completed or InspectionState.AwaitingApproval)
+            {
+                string msg = "This inspection will go back to Draft so you can change the answers. "
+                    + "You'll need to complete it again afterwards.";
+                if (hasApproval)
+                    msg += "\n\nThe approval signature already on it (Chief FSES / Fire Marshal) will be removed. "
+                        + "A saved (pre-signed) Chief FSES signature is added again automatically when you complete it.";
+                if (!await Dialogs.ConfirmAsync("Edit this inspection?", msg, "Edit", "Cancel"))
+                    return;
+
+                var (ok, message) = await _inspections.ReopenForEditAsync(row.Id);
+                if (!ok)
+                {
+                    await Dialogs.ShowAsync("Can't edit", message);
+                    return;
+                }
+            }
+
+            await Nav.GoAsync($"{nameof(FormPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            await Dialogs.ShowAsync("Couldn't open for editing", AppLog.Describe(ex));
+        }
+    }
+
     // Swipe -> Delete: pangutan-on una, dayon i-delete ang draft.
     [RelayCommand]
     private async Task DeleteAsync(DashboardRow? row)

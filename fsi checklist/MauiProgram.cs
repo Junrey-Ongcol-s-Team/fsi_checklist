@@ -3,6 +3,7 @@
 // Kung mag-add ka og bag-ong page: AddTransient diri, ug RegisterRoute sa AppShell.xaml.cs.
 // =====================================================================
 using CommunityToolkit.Maui;
+using UraniumUI;
 using fsi_checklist.Data;
 using fsi_checklist.Services;
 using fsi_checklist.ViewModels;
@@ -33,6 +34,14 @@ namespace fsi_checklist
             builder
                 .UseMauiApp<App>()
                 .UseMauiCommunityToolkit()
+                .UseUraniumUI()           // UraniumUI: kinahanglan ang duha ka linya
+                .UseUraniumUIMaterial()
+                // BUG FIX (UraniumUI 3.0.0): ang StatefulButtonHandler ni Uranium mo-crash inig Back/close sa page
+                // ("PlatformView cannot be null here") kay gi-usab niya ang kolor sa Button nga gikuha na sa screen.
+                // Tungod niini na-hang ang app ug na-lock ang "fsi checklist.exe". Ibalik ang standard nga
+                // MAUI Button handler. Ang ExpanderView ug Material styles ni Uranium mugana gihapon.
+                .ConfigureMauiHandlers(handlers =>
+                    handlers.AddHandler<Button, Microsoft.Maui.Handlers.ButtonHandler>())
                 .ConfigureFonts(fonts =>
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -47,6 +56,7 @@ namespace fsi_checklist
             builder.Services.AddSingleton<DatabaseService>();
             builder.Services.AddSingleton<InspectionService>();
             builder.Services.AddSingleton<AppSettingsService>();
+            builder.Services.AddSingleton<PrintService>();   // Print: pun-on ang BFP form (.docx)
 
             // pages & view models
             // Transient = bag-ong kopya matag abli sa page (mga page ug ViewModel).

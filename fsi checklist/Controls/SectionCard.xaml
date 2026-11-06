@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+    SectionCard: pangkaraniwang "kahon" (card) nga gamiton sa tanang page.
+    Naay titulo sa taas ug bisan unsang sulod sa ilawom (fields, buttons, text).
+
+    Paggamit sa bisan unsang page:
+      xmlns:controls="clr-namespace:fsi_checklist.Controls"
+      <controls:SectionCard Title="Operator ug vehicle">
+          ...ibutang diri ang mga fields...
+      </controls:SectionCard>
+-->
+<ContentView
+    x:Class="fsi_checklist.Controls.SectionCard"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Border
+        Padding="16"
+        BackgroundColor="{AppThemeBinding Light=White,
+                                          Dark=#1E1E1E}"
+        Stroke="{AppThemeBinding Light=#E0E0E0,
+                                 Dark=#3C3C3C}"
+        StrokeShape="RoundRectangle 14"
+        StrokeThickness="1">
+        <VerticalStackLayout Spacing="12">
+            <Label
+                x:Name="TitleLabel"
+                FontAttributes="Bold"
+                FontSize="17"
+                IsVisible="False" />
+            <ContentView x:Name="Host" />
+        </VerticalStackLayout>
+    </Border>
+</ContentView>

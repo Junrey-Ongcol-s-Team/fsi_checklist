@@ -7,19 +7,33 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:fsi_checklist.Views"
+    xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
+    xmlns:controls="clr-namespace:fsi_checklist.Controls"
+    BackgroundColor="{AppThemeBinding Light=#F6F3F2, Dark=#121212}"
     Title="{Binding Title}">
 
     <ContentPage.Resources>
 
         <Style x:Key="ChoiceChip" TargetType="Button">
-            <Setter Property="HeightRequest" Value="40" />
-            <Setter Property="CornerRadius" Value="20" />
-            <Setter Property="Padding" Value="18,0" />
-            <Setter Property="FontSize" Value="14" />
+            <Setter Property="HeightRequest" Value="48" />
+            <Setter Property="CornerRadius" Value="24" />
+            <Setter Property="Padding" Value="26,0" />
+            <Setter Property="FontSize" Value="15" />
             <Setter Property="BorderWidth" Value="1" />
             <Setter Property="BackgroundColor" Value="Transparent" />
             <Setter Property="BorderColor" Value="{AppThemeBinding Light=#BDBDBD, Dark=#5A5A5A}" />
             <Setter Property="TextColor" Value="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+        </Style>
+
+        <!--  Outline nga button (Save draft, Next missing) sa ubos nga bar  -->
+        <Style x:Key="OutlineButton" TargetType="Button">
+            <Setter Property="HeightRequest" Value="48" />
+            <Setter Property="CornerRadius" Value="12" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="BorderWidth" Value="1" />
+            <Setter Property="BackgroundColor" Value="Transparent" />
+            <Setter Property="BorderColor" Value="{AppThemeBinding Light=#C9BFBC, Dark=#5A5A5A}" />
+            <Setter Property="TextColor" Value="{AppThemeBinding Light=#231918, Dark=#E0E0E0}" />
         </Style>
 
         <!--  Section header  -->
@@ -39,7 +53,27 @@
                     FontSize="12"
                     IsVisible="{Binding HasLabel}"
                     Text="{Binding Label}" />
-                <Entry Placeholder="{Binding Hint}" Text="{Binding Text}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Entry Placeholder="{Binding Hint}" Text="{Binding Text}" />
+                    <!--  N/A: Certificate of Fire Drill, Fire Insurance Policy No.  -->
+                    <Button
+                        Grid.Column="1"
+                        Command="{Binding ToggleNaCommand}"
+                        IsVisible="{Binding CanNa}"
+                        Style="{StaticResource ChoiceChip}"
+                        Text="N/A">
+                        <Button.Triggers>
+                            <DataTrigger
+                                Binding="{Binding IsNa}"
+                                TargetType="Button"
+                                Value="True">
+                                <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                                <Setter Property="TextColor" Value="White" />
+                            </DataTrigger>
+                        </Button.Triggers>
+                    </Button>
+                </Grid>
             </VerticalStackLayout>
         </DataTemplate>
 
@@ -57,15 +91,24 @@
         </DataTemplate>
 
         <DataTemplate x:Key="NumberSlot">
-            <VerticalStackLayout Spacing="2">
+            <VerticalStackLayout IsVisible="{Binding IsShown}" Spacing="2">
                 <Label
                     FontSize="12"
                     IsVisible="{Binding HasLabel}"
                     Text="{Binding Label}" />
-                <Entry
-                    Keyboard="Numeric"
-                    Placeholder="{Binding Hint}"
-                    Text="{Binding Text}" />
+                <!--  Numero + UNIT sa tuo (kanunay makita, pananglitan "___ m", "___ persons")  -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Entry
+                        Keyboard="Numeric"
+                        Placeholder="0"
+                        Text="{Binding Text}" />
+                    <Label
+                        Grid.Column="1"
+                        FontSize="14"
+                        IsVisible="{Binding HasHint}"
+                        Text="{Binding Hint}"
+                        VerticalOptions="Center" />
+                </Grid>
             </VerticalStackLayout>
         </DataTemplate>
 
@@ -130,6 +173,76 @@
             </VerticalStackLayout>
         </DataTemplate>
 
+        <!--  CHIPS: i-tap aron idugang/tangtangon; i-type ang lain unya "Add"  -->
+        <DataTemplate x:Key="ChipsSlot">
+            <VerticalStackLayout Spacing="4">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                    <Entry
+                        Placeholder="Search or type a clearance"
+                        ReturnCommand="{Binding AddChipCommand}"
+                        Text="{Binding NewChip}" />
+                    <Button
+                        Grid.Column="1"
+                        Command="{Binding AddChipCommand}"
+                        Text="Add" />
+                </Grid>
+                <FlexLayout BindableLayout.ItemsSource="{Binding FilteredOptions}" Wrap="Wrap">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,8,8"
+                                Command="{Binding SelectCommand}"
+                                Style="{StaticResource ChoiceChip}"
+                                Text="{Binding Label}">
+                                <Button.Triggers>
+                                    <DataTrigger
+                                        Binding="{Binding IsSelected}"
+                                        TargetType="Button"
+                                        Value="True">
+                                        <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
+                                        <Setter Property="BorderColor" Value="{StaticResource Primary}" />
+                                        <Setter Property="TextColor" Value="White" />
+                                    </DataTrigger>
+                                </Button.Triggers>
+                            </Button>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+                <FlexLayout BindableLayout.ItemsSource="{Binding CustomChips}" Wrap="Wrap">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate>
+                            <Button
+                                Margin="0,0,8,8"
+                                BackgroundColor="{StaticResource Primary}"
+                                BorderColor="{StaticResource Primary}"
+                                Command="{Binding SelectCommand}"
+                                Style="{StaticResource ChoiceChip}"
+                                Text="{Binding Label}"
+                                TextColor="White" />
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
+            </VerticalStackLayout>
+        </DataTemplate>
+
+        <!--  PICKER (dropdown): i-tap aron mopili (pananglitan 069 Type of occupancy)  -->
+        <DataTemplate x:Key="PickerSlot">
+            <VerticalStackLayout Spacing="2">
+                <Label
+                    FontSize="12"
+                    IsVisible="{Binding HasLabel}"
+                    Text="{Binding Label}" />
+                <Picker
+                    ItemsSource="{Binding OptionLabels}"
+                    SelectedIndex="{Binding PickerIndex, Mode=TwoWay}"
+                    Title="Select type of occupancy" />
+            </VerticalStackLayout>
+        </DataTemplate>
+
         <DataTemplate x:Key="PhotoSlot">
             <Label
                 FontAttributes="Italic"
@@ -140,7 +253,9 @@
         <views:SlotTemplateSelector
             x:Key="SlotSelector"
             BoolTemplate="{StaticResource BoolSlot}"
+            ChipsTemplate="{StaticResource ChipsSlot}"
             ChoiceTemplate="{StaticResource ChoiceSlot}"
+            PickerTemplate="{StaticResource PickerSlot}"
             DateTemplate="{StaticResource DateSlot}"
             LongTextTemplate="{StaticResource LongTextSlot}"
             NumberTemplate="{StaticResource NumberSlot}"
@@ -151,13 +266,13 @@
         <DataTemplate x:Key="ItemTemplate">
             <Border
                 Margin="{Binding Margin}"
-                Padding="12"
+                Padding="14"
                 BackgroundColor="{AppThemeBinding Light=White,
                                                   Dark=#1E1E1E}"
                 IsVisible="{Binding IsVisible}"
                 Stroke="{AppThemeBinding Light=#E0E0E0,
                                          Dark=#3C3C3C}"
-                StrokeShape="RoundRectangle 10"
+                StrokeShape="RoundRectangle 14"
                 StrokeThickness="1">
                 <!--  Yellow nga frame kung kulang ang tubag (human mo-tap og Next missing)  -->
                 <Border.Triggers>
@@ -229,8 +344,87 @@
             </Border>
         </DataTemplate>
 
+        <!--
+            EXPANDER (UraniumUI ExpanderView): ang numero sa Section V (069), pananglitan "1. Building Construction".
+            Header = ang numero. Body = ang mga pangutana sulod niini (Children), sirado hangtod i-tap ang header.
+        -->
+        <DataTemplate x:Key="ExpanderTemplate">
+            <Border
+                BackgroundColor="{AppThemeBinding Light=White,
+                                                  Dark=#1E1E1E}"
+                IsVisible="{Binding IsVisible}"
+                Stroke="{AppThemeBinding Light=#E0E0E0,
+                                         Dark=#3C3C3C}"
+                StrokeShape="RoundRectangle 14"
+                StrokeThickness="1">
+                <!--  Yellow nga frame kung naay kulang sa sulod (human mo-tap og Next missing)  -->
+                <Border.Triggers>
+                    <DataTrigger
+                        Binding="{Binding IsMissing}"
+                        TargetType="Border"
+                        Value="True">
+                        <Setter Property="Stroke" Value="#F9A825" />
+                        <Setter Property="StrokeThickness" Value="3" />
+                    </DataTrigger>
+                </Border.Triggers>
+                <uranium:ExpanderView IsExpanded="{Binding IsExpanded, Mode=TwoWay}">
+                    <uranium:ExpanderView.Header>
+                        <!--  Numero + CIRCLE PROGRESS sa tuo. Yellow = kulang pa, green ug ✓ = kompleto  -->
+                        <Grid Padding="14,10" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                            <Label
+                                FontAttributes="Bold"
+                                FontSize="16"
+                                Text="{Binding LabelText}"
+                                VerticalOptions="Center" />
+                            <Grid
+                                Grid.Column="1"
+                                HeightRequest="40"
+                                IsVisible="{Binding HasProgress}"
+                                VerticalOptions="Center"
+                                WidthRequest="40">
+                                <controls:ProgressRing
+                                    HeightRequest="40"
+                                    Progress="{Binding Progress}"
+                                    RingColor="{Binding RingColor}"
+                                    WidthRequest="40" />
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="11"
+                                    HorizontalOptions="Center"
+                                    Text="{Binding ProgressText}"
+                                    TextColor="{Binding RingColor}"
+                                    VerticalOptions="Center" />
+                            </Grid>
+                        </Grid>
+                    </uranium:ExpanderView.Header>
+
+                    <VerticalStackLayout Padding="10,0,10,12" Spacing="10">
+                        <!--  Ang kaugalingong pilian sa header (pananglitan Construction type: Type I ... Type V)  -->
+                        <VerticalStackLayout
+                            Padding="4,0"
+                            BindableLayout.ItemTemplateSelector="{StaticResource SlotSelector}"
+                            BindableLayout.ItemsSource="{Binding Slots}"
+                            Spacing="8" />
+                        <!--  Ang mga anak nga pangutana (pananglitan "Others (specify)", Renovation ...)  -->
+                        <VerticalStackLayout
+                            BindableLayout.ItemTemplate="{StaticResource ItemTemplate}"
+                            BindableLayout.ItemsSource="{Binding Children}"
+                            Spacing="10" />
+                        <!--  DONE: sirad-an ang expander ug mobalik sa numero (dili na kinahanglan mo-scroll pataas)  -->
+                        <Button
+                            Command="{Binding CollapseCommand}"
+                            HorizontalOptions="End"
+                            Style="{StaticResource OutlineButton}"
+                            Text="Done  ▲"
+                            WidthRequest="120" />
+                    </VerticalStackLayout>
+                </uranium:ExpanderView>
+            </Border>
+        </DataTemplate>
+
         <views:FormRowTemplateSelector
             x:Key="RowSelector"
+            ExpanderTemplate="{StaticResource ExpanderTemplate}"
             ItemTemplate="{StaticResource ItemTemplate}"
             SectionTemplate="{StaticResource SectionTemplate}" />
 
@@ -282,17 +476,20 @@
                     <!--  Save draft = mobalik sa dashboard; Next missing = pangitaon ang kulang; Sign-off = pirma  -->
                     <Button
                         Command="{Binding SaveDraftCommand}"
-                        FontSize="13"
+                        Style="{StaticResource OutlineButton}"
                         Text="Save draft" />
                     <Button
                         Grid.Column="1"
                         Command="{Binding NextMissingCommand}"
-                        FontSize="13"
+                        Style="{StaticResource OutlineButton}"
                         Text="Next missing" />
                     <Button
                         Grid.Column="2"
                         Command="{Binding GoToSignoffCommand}"
+                        CornerRadius="12"
+                        FontAttributes="Bold"
                         FontSize="13"
+                        HeightRequest="48"
                         Text="Sign-off" />
                 </Grid>
             </VerticalStackLayout>
