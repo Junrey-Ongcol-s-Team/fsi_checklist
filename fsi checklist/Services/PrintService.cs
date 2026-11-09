@@ -208,8 +208,13 @@ public sealed class PrintService
                 v[main] = $"{mv} ({spec.Trim()})";
         }
 
-        // N/A: kung "N/A" ang Certificate of Fire Drill / Fire Insurance Policy No., "N/A" pud ang iyang date issued
-        foreach (var (no, date) in new[] { ("fire_drill_no", "fire_drill_date"), ("insurance_policy_no", "insurance_policy_date") })
+        // N/A: kung "N/A" ang numero (Fire Drill, Fire Insurance, FSEC, Permit, FSIC...), "N/A" pud ang iyang date issued
+        foreach (var (no, date) in new[]
+        {
+            ("fire_drill_no", "fire_drill_date"), ("insurance_policy_no", "insurance_policy_date"),
+            ("fsec_no", "fsec_date"), ("renovation_permit_no", "renovation_permit_date"),
+            ("fsic_no", "fsic_date"), ("business_permit_no", "business_permit_date"),
+        })
         {
             if (v.TryGetValue(no, out var nv) && string.Equals(nv.Trim(), "N/A", StringComparison.OrdinalIgnoreCase))
                 v[date] = "N/A";

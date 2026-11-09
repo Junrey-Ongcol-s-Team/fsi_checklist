@@ -17,5 +17,6 @@ public static class FsicNewOccupancyControls
         ["YesNo"] = typeof(FsicNewOccupancyYesNoButtons),
         ["Choice"] = typeof(FsicNewOccupancyChoiceButtons),
         ["Chips"] = typeof(FsicNewOccupancyClearanceChips),
+        ["Picker"] = typeof(FsicNewOccupancyResidentialPicker),
     };
 }

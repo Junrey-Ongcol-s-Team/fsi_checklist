@@ -182,7 +182,7 @@ public sealed partial class FormPageViewModel : ObservableObject
             }
 
             // N/A button sa numero sa Fire Drill / Fire Insurance (ang date issued mawala kung N/A, tan-awa na_text.sql)
-            if (NaTextKeys.Contains(item.Key) && slots.Count > 0)
+            if ((NaTextKeys.Contains(item.Key) || NaTextItems.Contains(item.Id)) && slots.Count > 0)
                 slots[0].CanNa = true;
 
             foreach (var slot in slots)
@@ -789,6 +789,16 @@ public sealed partial class FormPageViewModel : ObservableObject
         "fsic-new-occupancy.fp_chutes.grp",        // 061 Fire protection: J.4 Chutes / incinerators
         "fsic-new-occupancy.fp_firewall.grp",      // 061 Fire protection: K. Fire wall
         "during-construction.general",             // 068 General information (Stage of inspection, FSEC ...)
+        "fsic-renewal.nature",                     // 069 Nature of inspection conducted (usa ra ang mapili)
+        "small-business.nature.grp",               // 024 II. Nature of inspection conducted
+        "small-business.other_info.grp",           // 024 IV. Other information (sulod: Type of Occupancy, Construction Type ...)
+        "small-business.egress.a",                 // 024 V. Means of egress: A. Exit access
+        "small-business.egress.b",                 // 024 V. Means of egress: B. Exits
+        "small-business.signage.grp",              // 024 VI. Signs, lighting, and exits signage
+        "small-business.hazard.grp",               // 024 VII. Hazard
+        "small-business.fp.a",                     // 024 VIII. Fire protection: A. First aid fire protection (Fire extinguishers)
+        "small-business.fp.b",                     // 024 VIII. Fire protection: B. Emergency lighting systems
+        "small-business.fp.c",                     // 024 VIII. Fire protection: C. Fire detection and alarm
     };
 
     // N/A BUTTON: mga TEXT nga pangutana nga naay "N/A" tapad sa sulatanan (tanang forms nga naa niini).
@@ -798,10 +808,20 @@ public sealed partial class FormPageViewModel : ObservableObject
         "insurance_policy_no",   // Fire Insurance Policy No. (if any)
     };
 
+    // N/A BUTTON sa usa ra ka form (dili tanan): ang date issued mawala kung N/A (seeds/024d.sql)
+    private static readonly HashSet<string> NaTextItems = new()
+    {
+        "small-business.fsec_no",               // 024 FSEC No.
+        "small-business.renovation_permit_no",  // 024 Building/Renovation Permit
+        "small-business.fsic_no",               // 024 FSIC No. (Latest)
+        "small-business.business_permit_no",    // 024 Business Permit No.
+    };
+
     // PICKER: mga CHOICE nga dropdown ang hitsura (dili chips), para sa taas nga listahan.
     private static readonly HashSet<string> PickerItems = new()
     {
         "fsic-renewal.a03.prev_occupancy",   // 069 3. General Occupancy: Previous type of occupancy
+        "fsic-new-occupancy.residential_subclass",   // 061 Residential: sub classification (Hotels, Dormitories ...)
     };
 
     // CHIPS: mga LONG_TEXT nga pangutana nga chips ang hitsura (ang andam nga chips = form_choice sa item).
