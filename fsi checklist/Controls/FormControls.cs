@@ -50,6 +50,8 @@ public static class FormControls
         string role = RoleOf(slot);
         if (!controls.TryGetValue(role, out var type) && role == "YesNo")
             controls.TryGetValue("Choice", out type);   // walay YesNo? gamiton ang Choice sa form
+        if (type == null && role == "NaToggle")
+            controls.TryGetValue("Bool", out type);     // walay N/A button? gamiton ang checkbox sa form
         if (type == null)
             return null;
 
@@ -64,6 +66,7 @@ public static class FormControls
     /// <summary>Klase sa tubag: "Text", "Date", "YesNo", "Choice", "Chips", "Picker" ...</summary>
     public static string RoleOf(SlotViewModel slot) => slot.Kind switch
     {
+        SlotKind.Bool when slot.ItemId.EndsWith(".na") => "NaToggle",   // N/A button sa usa ka numero (069 1-13)
         SlotKind.Bool => "Bool",
         SlotKind.Choice when slot.Options.Count > 0 && slot.Options.All(o => YesNoValues.Contains(o.Value)) => "YesNo",
         _ => slot.Kind.ToString(),

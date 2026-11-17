@@ -10,6 +10,10 @@ public sealed class AppSettingsService
 {
     public const string StationName = "station_name";
     public const string StationAddress = "station_address";
+    public const string StationRegion = "station_region";     // letterhead linya 1: "Region 10"
+    public const string StationOffice = "station_office";     // letterhead linya 2: "Misamis Occidental Provincial Office"
+    public const string StationEmail = "station_email";       // letterhead: email sa station
+    public const string StationHotline = "station_hotline";   // letterhead: hotline number sa station
 
     private readonly DatabaseService _database;
 

@@ -6,22 +6,45 @@
     x:Class="fsi_checklist.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:settings="clr-namespace:fsi_checklist.Controls.Settings"
     Title="Settings">
 
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="12">
-            <Label FontSize="12" Text="Fire station name" />
-            <Entry Text="{Binding StationName}" />
+            <!--  LETTERHEAD sa tanang printout (kaugalingong control: Controls/Settings/StationInfoField)  -->
+            <Label FontAttributes="Bold" FontSize="18" Text="Fire station (letterhead)" />
+            <Label
+                FontSize="12"
+                Text="Printed at the top of every form, in this order: Region, Provincial Office, Station, Address, Hotline/Email."
+                TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
+            <settings:StationInfoField
+                Example="Region 10"
+                Text="{Binding StationRegion}"
+                Title="1. Region" />
+            <settings:StationInfoField
+                Example="Misamis Occidental Provincial Office"
+                Text="{Binding StationOffice}"
+                Title="2. Provincial / District Office" />
+            <settings:StationInfoField
+                Example="Tangub City Fire Station"
+                Text="{Binding StationName}"
+                Title="3. Fire station name" />
+            <settings:StationInfoField
+                Example="1st South Street, Brgy III, Tangub City"
+                Text="{Binding StationAddress}"
+                Title="4. Fire station address" />
+            <settings:StationInfoField
+                Example="545-0500"
+                Keyboard="Telephone"
+                Text="{Binding StationHotline}"
+                Title="5. Station hotline number" />
+            <settings:StationInfoField
+                Example="tangubcfs_bfp10@yahoo.com"
+                Keyboard="Email"
+                Text="{Binding StationEmail}"
+                Title="5. Email (printed after the hotline: 545-0500/email)" />
 
-            <Label FontSize="12" Text="Fire station address" />
-            <Entry Text="{Binding StationAddress}" />
-
-            <Button
-                Margin="0,12,0,0"
-                Command="{Binding SaveCommand}"
-                CornerRadius="12"
-                HeightRequest="52"
-                Text="Save" />
+            <settings:SaveSettingsButton Command="{Binding SaveCommand}" />
 
             <!--  PRE-SIGNED NGA PIRMA: mo-pirma kausa ra ang taga-BFP; gamiton na kini kada inspection  -->
             <Label
@@ -47,10 +70,7 @@
                                     Drawable="{Binding Preview}"
                                     HeightRequest="60"
                                     IsVisible="{Binding HasPreview}" />
-                                <Button
-                                    Clicked="OnPresignClicked"
-                                    HeightRequest="44"
-                                    Text="{Binding ButtonText}" />
+                                <settings:PresignButton Clicked="OnPresignClicked" />
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
@@ -64,14 +84,10 @@
                 FontSize="18"
                 Text="Database" />
             <Label FontSize="12" Text="Database file" />
-            <Entry IsReadOnly="True" Text="{Binding DatabasePath, Mode=OneWay}" />
+            <settings:DatabasePathBox Text="{Binding DatabasePath, Mode=OneWay}" />
             <Label FontSize="12" Text="Error log (open with Notepad)" />
-            <Entry IsReadOnly="True" Text="{Binding LogPath, Mode=OneWay}" />
-            <Button
-                BackgroundColor="#C62828"
-                Command="{Binding ResetDatabaseCommand}"
-                Text="Reset database"
-                TextColor="White" />
+            <settings:ErrorLogPathBox Text="{Binding LogPath, Mode=OneWay}" />
+            <settings:ResetDatabaseButton Command="{Binding ResetDatabaseCommand}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

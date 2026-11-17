@@ -14,5 +14,6 @@ public static class DwellingControls
         ["Date"] = typeof(DwellingDateField),
         ["Bool"] = typeof(DwellingCheckItem),
         ["YesNo"] = typeof(DwellingYesNoButtons),
+        ["Choice"] = typeof(DwellingChoiceButtons),
     };
 }

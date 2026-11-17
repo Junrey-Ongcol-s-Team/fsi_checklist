@@ -44,16 +44,27 @@ public sealed class PrintService
     /// <summary>Himoon ang napuno nga PDF ug ablihan para i-print. Mobalik og error message, o null kung OK.</summary>
     public async Task<string?> PrintAsync(string inspectionId)
     {
+        var (path, error) = await BuildPdfAsync(inspectionId);
+        if (path == null)
+            return error;
+
+        await Launcher.OpenAsync(new OpenFileRequest("Print", new ReadOnlyFile(path, "application/pdf")));
+        return null;
+    }
+
+    /// <summary>Himoon ang napuno nga PDF (sa cache folder) apan DILI ablihan. Gamiton sa Print ug sa Export.</summary>
+    public async Task<(string? Path, string? Error)> BuildPdfAsync(string inspectionId)
+    {
         var form = await _inspections.LoadFormAsync(inspectionId);
         if (form == null)
-            return "This inspection no longer exists.";
+            return (null, "This inspection no longer exists.");
 
         // "BFP-QSF-FSED-064" -> "print/064.pdf" ug "print/064.json"
         string number = form.Inspection.Template.Code.Split('-').Last().Trim();
         string pdfFile = $"print/{number}.pdf";
         string mapFile = $"print/{number}.json";
         if (!await FileSystem.AppPackageFileExistsAsync(pdfFile) || !await FileSystem.AppPackageFileExistsAsync(mapFile))
-            return $"No print template yet for {form.Inspection.Template.Code}.";
+            return (null, $"No print template yet for {form.Inspection.Template.Code}.");
 
         var signoff = await _inspections.LoadSignoffAsync(inspectionId);
         var values = await BuildValuesAsync(form, signoff);
@@ -74,7 +85,7 @@ public sealed class PrintService
 
         var map = JsonSerializer.Deserialize<PrintMap>(mapJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (map == null || map.Overlay.Count == 0)
-            return "The print template is damaged.";
+            return (null, "The print template is damaged.");
 
         // Isulat ang mga tubag ibabaw sa form.
         // LITRATO: mga litrato sa item nga naa sa map.Photos (pananglitan "defects")
@@ -110,8 +121,7 @@ public sealed class PrintService
         await File.WriteAllBytesAsync(outPath, pdf);
 
         AppLog.Info("Print file: " + outPath);
-        await Launcher.OpenAsync(new OpenFileRequest("Print", new ReadOnlyFile(outPath, "application/pdf")));
-        return null;
+        return (outPath, null);
     }
 
     // ---------------------------------------------------------------- values
@@ -126,6 +136,21 @@ public sealed class PrintService
         // ----- ulohan -----
         v["STATION_NAME"] = await _settings.GetAsync(AppSettingsService.StationName);
         v["STATION_ADDRESS"] = await _settings.GetAsync(AppSettingsService.StationAddress);
+
+        // LETTERHEAD (ibabaw sa tanang form, ilisan ang "(FIRE STATION LETTER HEAD)" / "(Region) (Station) ..."),
+        // sama sa opisyal nga letterhead (gikan sa Settings):
+        //   1 Region 10
+        //   2 Misamis Occidental Provincial Office
+        //   3 Tangub City Fire Station
+        //   4 1st South Street, Brgy III, Tangub City
+        //   5 545-0500/tangubcfs_bfp10@yahoo.com   (hotline/email)
+        async Task<string> Get(string key) => (await _settings.GetAsync(key)).Trim();
+        string hotline = await Get(AppSettingsService.StationHotline), email = await Get(AppSettingsService.StationEmail);
+        v["LETTERHEAD_1"] = await Get(AppSettingsService.StationRegion);
+        v["LETTERHEAD_2"] = await Get(AppSettingsService.StationOffice);
+        v["LETTERHEAD_3"] = v["STATION_NAME"].Trim();
+        v["LETTERHEAD_4"] = v["STATION_ADDRESS"].Trim();
+        v["LETTERHEAD_5"] = string.Join("/", new[] { hotline, email }.Where(x => x.Length > 0));
         v["DATE_INSPECTED"] = i.DateInspected?.ToString("MMMM d, yyyy", en) ?? "";
         v["REFERENCE_NO"] = i.ReferenceNo ?? "";
         v["SUBJECT_NAME"] = i.Subject.Name;
@@ -214,10 +239,32 @@ public sealed class PrintService
             ("fire_drill_no", "fire_drill_date"), ("insurance_policy_no", "insurance_policy_date"),
             ("fsec_no", "fsec_date"), ("renovation_permit_no", "renovation_permit_date"),
             ("fsic_no", "fsic_date"), ("business_permit_no", "business_permit_date"),
+            ("building_permit_no", "building_permit_date"), ("occupancy_permit_no", "occupancy_permit_date"),
+            ("ntcv_no", "ntcv_date"), ("municipal_license_no", "municipal_license_date"),
+            ("electrical_no", "electrical_date"),
         })
         {
             if (v.TryGetValue(no, out var nv) && string.Equals(nv.Trim(), "N/A", StringComparison.OrdinalIgnoreCase))
                 v[date] = "N/A";
+        }
+
+        // 069 N/A sa numero 1-13 (aNN.na naka-check): "N/A" tapad sa "Compliant" sa Previous (na2) ug Present (na)
+        foreach (var k in v.Keys.Where(k => Regex.IsMatch(k, @"^a\d\d[ab]?\.na$")).ToList())
+        {
+            bool on = v[k] == Check;
+            v[k] = on ? "N/A" : "";
+            v[k + "2"] = v[k];
+        }
+
+        // REMARKS -> DEFECTS (tanang forms nga naay Remarks column: 061, 068, 024, 075):
+        // ang REMARKS sa matag pangutana i-summary sa "DEFECTS / DEFICIENCIES" sa SAKTONG seksyon
+        // (061/068/024: Item I, II ... sumala sa seksyon; 075: usa ra ka Defects nga naay ngalan sa seksyon).
+        // Una ang remarks, dayon ang gi-type sa Defects. (Ang remarks mogawas gihapon sa iyang linya sa table.)
+        foreach (var (target, lines) in RemarksSummary(form, items.Values, v, IsShown))
+        {
+            v.TryGetValue(target, out var typed);
+            v[target] = string.Join("\n", lines)
+                + (string.IsNullOrWhiteSpace(typed) ? "" : "\n" + typed.Trim());
         }
 
         // ----- mga pirma: {{OWNER_REP_NAME}}, {{INSPECTOR_NAME}}, {{SIGNED_AT}} ... -----
@@ -277,6 +324,102 @@ public sealed class PrintService
         }
         return result;
     }
+
+    // REMARKS -> DEFECTS: mga linya matag Defects (Item I, Item II ... o "defects"), sunod sa han-ay sa form.
+    // Pananglitan 061: Item II <- "A. Exit access: Doors - guba ang closer"
+    //               075: defects <- "Corrosion: 5. Any corrosion at support points or fixtures? - naay taya"
+    private static List<(string Target, List<string> Lines)> RemarksSummary(
+        FormData form, IEnumerable<FormItem> items, Dictionary<string, string> v, Func<FormItem, int, bool> isShown)
+    {
+        var sections = form.Sections.ToDictionary(s => s.Id);
+        var keys = items.Select(i => i.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var byTarget = new Dictionary<string, List<string>>();
+        var order = new List<string>();
+
+        foreach (var it in items
+                     .Where(i => i.ColumnSetId != null)
+                     .OrderBy(i => sections.TryGetValue(i.SectionId, out var s) ? s.SortOrder : 0)
+                     .ThenBy(i => i.SortOrder))
+        {
+            if (!isShown(it, 0) || !v.TryGetValue(it.Key + ".remarks", out var remark) || string.IsNullOrWhiteSpace(remark))
+                continue;
+            if (!sections.TryGetValue(it.SectionId, out var section))
+                continue;
+            // 075 TEST RECORDS (Radiography, Ultrasonic, Hydrostatic): dili i-apil sa Defects
+            if (it.TemplateId == "conveyance-pipeline" && it.Key.StartsWith("test."))
+                continue;
+
+            var (target, part) = DefectsTarget(it.TemplateId, section.Title, keys);
+            if (target == null)
+                continue;
+
+            // cond.05 -> "5. ..." (numero sa form, 075); uban: ang pangutana ra
+            string label = it.Key.StartsWith("cond.") && int.TryParse(it.Key[5..], out int no)
+                ? $"{no}. {it.Label}"
+                : it.Label;
+            string line = (part != null ? part + ": " : "") + label + " - " + remark.Trim();
+
+            if (!byTarget.TryGetValue(target, out var list))
+            {
+                byTarget[target] = list = new List<string>();
+                order.Add(target);
+            }
+            list.Add(line);
+        }
+        return order.Select(t => (t, byTarget[t])).ToList();
+    }
+
+    private static readonly string[] Romans = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X" };
+
+    // ASA ibutang ang remark: Target = key sa Defects (pananglitan "defects.i2"), Part = bahin sa seksyon nga isulat una.
+    private static (string? Target, string? Part) DefectsTarget(string templateId, string title, HashSet<string> keys)
+    {
+        bool hasItems = keys.Any(k => k.StartsWith("defects.i"));
+
+        // USA RA ka Defects (075): isulat ang ngalan sa seksyon ("Corrosion: ...")
+        if (!hasItems)
+            return keys.Contains("defects") ? ("defects", title) : (null, null);
+
+        string? roman;
+        string? part = null;
+
+        if (templateId == "fsic-new-occupancy")
+        {
+            // 061: walay numero ang ngalan sa seksyon, busa sumala sa papel nga form:
+            //   I. Construction and compartmentation (apil Sectional occupancy), II. Means of egress,
+            //   III. Signs, lighting and exits signage, IV. Hazard, V. Fire protection
+            roman = title.StartsWith("Construction") || title.StartsWith("Sectional") ? "I"
+                : title.StartsWith("Means of egress") ? "II"
+                : title.StartsWith("Signs") ? "III"
+                : title.StartsWith("Hazard") ? "IV"
+                : title.StartsWith("Fire protection") ? "V"
+                : null;
+            int colon = title.IndexOf(": ", StringComparison.Ordinal);
+            if (colon > 0)
+                part = title[(colon + 2)..];   // "A. Exit access", "G. First aid fire protection (fire extinguishers)"
+        }
+        else
+        {
+            // 068 / 024 / 006: ang numero naa sa sugod ("II.B Fire doors", "VIII. Fire protection")
+            var m = System.Text.RegularExpressions.Regex.Match(title, @"^(VIII|VII|VI|IV|IX|V|III|II|I|X)\.(?:([A-Z])\b)?");
+            roman = m.Success ? m.Groups[1].Value : null;
+            if (m.Success && m.Groups[2].Success)
+            {
+                // "IV.A Fire protection: automatic fire suppression system (* mandatory ...)" -> "A. Automatic fire suppression system"
+                string rest = title[m.Length..].Trim();
+                int paren = rest.IndexOf(" (", StringComparison.Ordinal);
+                if (paren > 0) rest = rest[..paren];
+                int colon = rest.IndexOf(": ", StringComparison.Ordinal);
+                if (colon > 0) rest = rest[(colon + 2)..];
+                if (rest.Length > 0) rest = char.ToUpperInvariant(rest[0]) + rest[1..];
+                part = $"{m.Groups[2].Value}. {rest}";
+            }
+        }
+
+        int n = roman == null ? -1 : Array.IndexOf(Romans, roman) + 1;
+        string target = $"defects.i{n}";
+        return n > 0 && keys.Contains(target) ? (target, part) : (null, null);
+    }
 }
 
 
@@ -301,7 +444,28 @@ internal sealed class PrintMap
     public int InsertAt { get; set; } = -1;              // asa isulod ang dugang nga page (-1 = sa katapusan)
     public PrintPhotos? Photos { get; set; }             // mga litrato nga i-print sa kaugalingon nga page
     public PrintFooter? Footer { get; set; }             // "Page N of M" (usbon kung naay dugang nga page)
+    public PrintLetterhead? Letterhead { get; set; }     // ngalan, address, email/hotline sa station (ibabaw sa form)
     public List<int> Kids { get; set; } = new();         // mga page sa form (para sa dugang nga page)
+}
+
+// LETTERHEAD: ang "(FIRE STATION LETTER HEAD)" o "(Region) (Station) (Station Address)..." sa form
+// tabunan og puti (White), dayon isulat sa tunga (Cx) ang 5 ka linya gikan sa Settings, parehas ang gidak-on (S),
+// layo = Gap. Rows = unsang mga linya ang magkauban sa usa ka linya sa papel (kung kulang ang lugar,
+// pananglitan 024: [[0,1],[2],[3,4]] = "Region 10 | Provincial Office", station, "address | hotline/email").
+// Kung mas lapad sa W, gamayon ang letra aron dili maigo ang logo.
+internal sealed class PrintLetterhead
+{
+    public int P { get; set; }
+    public double Cx { get; set; }
+    public double Y { get; set; }            // baseline sa unang linya
+    public double S { get; set; } = 10;
+    public double Gap { get; set; } = 12;
+    public double W { get; set; } = 400;
+    public List<List<int>>? Rows { get; set; }
+    public List<double[]> White { get; set; } = new();
+    // KULANG ANG LUNA (024, 061, 006, 069, 064): pig-on og gamay ang sulod sa ubos sa letterhead aron mohaum
+    // ang 5 ka linya (parehas sa tanang form). Ang White ug Y kay human na sa pagpiga.
+    public PrintList? Move { get; set; }
 }
 
 // LISTAHAN (pananglitan "Secure the following Fire Safety Clearance/s"):
@@ -318,6 +482,12 @@ internal sealed class PrintList
     public int Obj { get; set; }                 // numero sa page object
     public string Dict { get; set; } = "";       // ang page object, %CONTENTS% = asa ibutang ang /Contents
     public List<int> Contents { get; set; } = new();   // mga content stream sa page (walay overlay)
+
+    // PIGA (letterhead): imbes ipaubos, ang sulod tali sa Floor ug Cut gamay nga pig-on (squeeze) aron
+    // makahatag og D nga luna sa ibabaw. Keep = mga kahon (logo) nga dili hilabtan (magpabilin tibuok).
+    public double D { get; set; }
+    public bool Squeeze { get; set; }
+    public List<double[]> Keep { get; set; } = new();
 }
 
 // LITRATO: ang mga litrato sa mga item (pananglitan "defects") i-print sa dugang nga page (6 matag page).
@@ -523,6 +693,25 @@ internal static class PdfFormWriter
             shifts.Add((row, d));
         }
 
+        // LETTERHEAD: kung naay sulod ang Settings ug kulang ang luna, pig-on ang sulod sa ubos (Move)
+        // ug ipaubos ang mga marker sa page (parehas nga pagpiga) aron motugma gihapon ang mga tubag.
+        bool letterheadOn = map.Letterhead != null
+            && Enumerable.Range(1, 5).Any(n => values.TryGetValue($"LETTERHEAD_{n}", out var lt) && !string.IsNullOrWhiteSpace(lt));
+        if (letterheadOn && map.Letterhead!.Move is { D: > 0 } mv && mv.Page < pages.Count && mv.Cut > mv.Floor + mv.D)
+        {
+            double k = (mv.Cut - mv.D - mv.Floor) / (mv.Cut - mv.Floor);
+            double Sq(double y) => mv.Floor + (y - mv.Floor) * k;
+            foreach (var m in map.Markers)
+                foreach (var sg in m.Segs.Where(x => x.P == mv.Page && x.Y < mv.Cut && x.Y > mv.Floor))
+                {
+                    sg.Y = Sq(sg.Y);
+                    if (sg.Box is { Length: 4 } bx)
+                        sg.Box = new[] { bx[0], Sq(bx[1]), bx[2], Sq(bx[3]) };
+                }
+            mv.Squeeze = true;
+            shifts.Add((mv, mv.D));
+        }
+
         // Taas nga "State particular violation": ibalhin sa VI. Defects aron klaro ug walay mawala.
         if (map.Markers.Any(x => x.K.StartsWith("defects#")))
             values = MoveLongParticularsToDefects(map, values);
@@ -612,6 +801,31 @@ internal static class PdfFormWriter
             }
             if (photos is { Count: > 0 } && map.Photos != null)
                 extras.AddRange(PhotoPages(pageSize, map.Photos.Title, photos));
+        }
+
+        // LETTERHEAD: station gikan sa Settings (kung walay sulod ang Settings: ang daan nga sulat sa form ra)
+        if (map.Letterhead is { } lh && lh.P >= 0 && lh.P < pages.Count)
+        {
+            var lhLines = Enumerable.Range(1, 5)
+                .Select(n => values.TryGetValue($"LETTERHEAD_{n}", out var t) ? t.Trim() : "")
+                .ToList();
+            if (lhLines.Any(t => t.Length > 0))
+            {
+                var pg = pages[lh.P];
+                foreach (var c in lh.White)
+                    pg.Append("q 1 g ").Append(N(c[0])).Append(' ').Append(N(c[1])).Append(' ')
+                      .Append(N(c[2] - c[0])).Append(' ').Append(N(c[3] - c[1])).Append(" re f Q\n");
+
+                var rows = lh.Rows ?? Enumerable.Range(0, 5).Select(i => new List<int> { i }).ToList();
+                double y = lh.Y;
+                foreach (var row in rows)
+                {
+                    string t = string.Join("  |  ", row.Where(i => i < lhLines.Count && lhLines[i].Length > 0).Select(i => lhLines[i]));
+                    if (t.Length > 0)
+                        LetterheadLine(pg, t, lh.S, lh.Cx, y, lh.W);
+                    y -= lh.Gap;   // pareho ang lugar sa matag linya (bisan walay sulod ang usa)
+                }
+            }
         }
 
         // PAGE NUMBER: kung naay dugang nga page, usbon ang "Page N of M" sa tanang page
@@ -761,6 +975,20 @@ internal static class PdfFormWriter
         }
 
         double used = fixedScale ?? FitScale(slots, paras);
+
+        // ENTER sa tubag (pananglitan Basement: "testing" + Enter + taas nga sulat): kung mogamay ang letra
+        // tungod sa bag-ong linya, i-usa ang mga paragraph (walay masayang nga linya) kung mas dako ang letra.
+        if (fixedScale == null && used < 1 && paras.Count > 1)
+        {
+            var joined = new List<string> { string.Join(" ", paras) };
+            double joinedScale = FitScale(slots, joined);
+            if (joinedScale > used)
+            {
+                paras = joined;
+                used = joinedScale;
+            }
+        }
+
         var (lines, _, wrap) = Layout(slots, paras, used);
 
         for (int k = 0; k < slots.Count; k++)
@@ -830,6 +1058,16 @@ internal static class PdfFormWriter
                 }
                 else
                 {
+                    // TAAS KAAYO nga pulong (dili mohaum bisan sa tibuok linya, pananglitan "99999..."):
+                    // sugdan na dinhi sa nahabilin nga luna aron dili masayang ang linya
+                    double f = slots[k].F * scale;
+                    double room = slots[k].W - TextWidth(lines[k] + " ", f);
+                    if (TextWidth(words[i], f) > slots[k].W && room > TextWidth(words[i][..1], f))
+                    {
+                        int cut = FitChars(words[i], f, room);
+                        lines[k] = lines[k] + " " + words[i][..cut];
+                        words[i] = words[i][cut..];
+                    }
                     wrap[k] = true;   // puno na: ang sunod nga pulong sa sunod nga linya
                     k++;
                 }
@@ -843,6 +1081,72 @@ internal static class PdfFormWriter
             k++;
         }
         return (lines, ok, wrap);
+    }
+
+    // PIGA (letterhead): 3 ka bahin sa page:
+    //   ibabaw  = ibabaw sa Cut + ang mga logo (Keep), wala giusab (tibuok ang logo)
+    //   tunga   = tali sa Floor ug Cut, gipig-on aron mo-ubos og D sa ibabaw (walay sulod sa column sa logo)
+    //   footer  = ubos sa Floor, wala giusab
+    private static string[] SqueezeBands(PrintList l, double d, double pw, double ph)
+    {
+        double k = (l.Cut - d - l.Floor) / (l.Cut - l.Floor);
+        double Sq(double y) => l.Floor + (y - l.Floor) * k;
+
+        var top = new StringBuilder($"q 0 {N(l.Cut)} {N(pw)} {N(ph - l.Cut)} re ");
+        foreach (var b in l.Keep)
+            top.Append(N(b[0])).Append(' ').Append(N(b[1])).Append(' ').Append(N(b[2] - b[0])).Append(' ').Append(N(b[3] - b[1])).Append(" re ");
+        top.Append("W n\n");
+
+        // tunga: tibuok lapad ubos sa logo; ibabaw niana, ang mga luna tali sa mga logo ra
+        double z = l.Keep.Count > 0 ? l.Keep.Min(b => Sq(b[1])) : l.Cut - d;
+        var mid = new StringBuilder($"Q\nq 0 {N(l.Floor)} {N(pw)} {N(z - l.Floor)} re ");
+        double at = 0;
+        foreach (var (a, b) in l.Keep.Select(x => (x[0], x[2])).OrderBy(x => x.Item1))
+        {
+            if (a > at)
+                mid.Append(N(at)).Append(' ').Append(N(z)).Append(' ').Append(N(a - at)).Append(' ').Append(N(l.Cut - d - z)).Append(" re ");
+            at = Math.Max(at, b);
+        }
+        if (at < pw)
+            mid.Append(N(at)).Append(' ').Append(N(z)).Append(' ').Append(N(pw - at)).Append(' ').Append(N(l.Cut - d - z)).Append(" re ");
+        mid.Append("W n 1 0 0 ").Append(k.ToString("0.######", CultureInfo.InvariantCulture))
+           .Append(" 0 ").Append(N(l.Floor * (1 - k))).Append(" cm\n");
+
+        return new[] { top.ToString(), mid.ToString(), $"Q\nq 0 0 {N(pw)} {N(l.Floor)} re W n\n", "Q\n" };
+    }
+
+    // Usa ka linya sa LETTERHEAD, sa tunga. Ang "1st", "2nd", "3rd", "4th" ... = gamay ug iitaas ang "st" (sama sa papel).
+    private static void LetterheadLine(StringBuilder pg, string text, double f, double cx, double y, double maxW)
+    {
+        // Bahinon: (sulat, superscript?) pananglitan "1" + "st" + " South Street, ..."
+        var parts = new List<(string T, bool Sup)>();
+        int last = 0;
+        foreach (Match m in Regex.Matches(text, @"(?<=\d)(st|nd|rd|th)\b"))
+        {
+            if (m.Index > last) parts.Add((text[last..m.Index], false));
+            parts.Add((m.Value, true));
+            last = m.Index + m.Length;
+        }
+        if (last < text.Length) parts.Add((text[last..], false));
+
+        double Width(double size) => parts.Sum(p => TextWidth(p.T, p.Sup ? size * 0.6 : size));
+        double w = Width(f);
+        if (w > maxW)
+        {
+            f *= maxW / w;
+            w = Width(f);
+        }
+
+        pg.Append("BT /FsiHelv ").Append(N(f)).Append(" Tf ").Append(N(cx - w / 2)).Append(' ').Append(N(y)).Append(" Td ");
+        foreach (var (t, sup) in parts)
+        {
+            if (sup)
+                pg.Append("/FsiHelv ").Append(N(f * 0.6)).Append(" Tf ").Append(N(f * 0.35)).Append(" Ts ")
+                  .Append(PdfString(t)).Append(" Tj /FsiHelv ").Append(N(f)).Append(" Tf 0 Ts ");
+            else
+                pg.Append(PdfString(t)).Append(" Tj ");
+        }
+        pg.Append("ET\n");
     }
 
     // Pila ka letra sa taas nga pulong ang mohaum sa gilapdon (labing menos 1).
@@ -1177,13 +1481,15 @@ internal static class PdfFormWriter
                 continue;
             var size = l.Page < map.Pages.Count ? map.Pages[l.Page] : new double[] { 612, 936 };
             string w = N(size[0]);
-            string[] bands =
-            {
-                $"q 0 {N(l.Cut)} {w} {N(size[1] - l.Cut)} re W n\n",
-                $"Q\nq 0 {N(l.Floor)} {w} {N(l.Cut - d - l.Floor)} re W n 1 0 0 1 0 {N(-d)} cm\n",
-                $"Q\nq 0 0 {w} {N(l.Floor)} re W n\n",
-                "Q\n",
-            };
+            string[] bands = l.Squeeze
+                ? SqueezeBands(l, d, size[0], size[1])
+                : new[]
+                {
+                    $"q 0 {N(l.Cut)} {w} {N(size[1] - l.Cut)} re W n\n",
+                    $"Q\nq 0 {N(l.Floor)} {w} {N(l.Cut - d - l.Floor)} re W n 1 0 0 1 0 {N(-d)} cm\n",
+                    $"Q\nq 0 0 {w} {N(l.Floor)} re W n\n",
+                    "Q\n",
+                };
             var ids = new List<int>();
             foreach (var b in bands)
             {

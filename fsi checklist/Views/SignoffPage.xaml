@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.SignoffPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:signoff="clr-namespace:fsi_checklist.Controls.SignoffScreen"
     xmlns:vm="clr-namespace:fsi_checklist.ViewModels"
     Title="Sign-off">
 
@@ -49,12 +50,7 @@
                         Drawable="{Binding Preview}"
                         HeightRequest="70"
                         IsVisible="{Binding IsSigned}" />
-                    <Button
-                        Grid.Row="2"
-                        Grid.ColumnSpan="2"
-                        Clicked="OnSignClicked"
-                        IsVisible="{Binding ShowSignButton}"
-                        Text="Sign" />
+                    <signoff:SignButton Grid.Row="2" Grid.ColumnSpan="2" Clicked="OnSignClicked" IsVisible="{Binding ShowSignButton}" />
                     <Label
                         Grid.Row="2"
                         Grid.ColumnSpan="2"
@@ -89,11 +85,8 @@
                     <ProgressBar Progress="{Binding ProgressFraction}" ProgressColor="{Binding ProgressColor}" />
                     <Label FontSize="12" Text="{Binding ProgressText}" />
                     <!--  VIEW RESULTS: ang tibuok checklist nga basa ra  -->
-                    <Button Command="{Binding ViewResultsCommand}" Text="View results" />
-                    <Button
-                        Command="{Binding EditFormCommand}"
-                        IsVisible="{Binding CanEditForm}"
-                        Text="Review / edit the form" />
+                    <signoff:ViewResultsButton Command="{Binding ViewResultsCommand}" />
+                    <signoff:ReviewFormButton Command="{Binding EditFormCommand}" IsVisible="{Binding CanEditForm}" />
                 </VerticalStackLayout>
             </Border>
 
@@ -120,15 +113,9 @@
                 Spacing="10" />
 
             <!--  COMPLETE: i-lock ang inspection  -->
-            <Button
-                Command="{Binding CompleteCommand}"
-                CornerRadius="12"
-                FontAttributes="Bold"
-                HeightRequest="52"
-                IsEnabled="{Binding CanComplete}"
-                Text="Complete inspection" />
+            <signoff:CompleteInspectionButton Command="{Binding CompleteCommand}" IsEnabled="{Binding CanComplete}" />
 
-            <Button Command="{Binding BackToDashboardCommand}" Text="Back to inspections" />
+            <signoff:BackToInspectionsButton Command="{Binding BackToDashboardCommand}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

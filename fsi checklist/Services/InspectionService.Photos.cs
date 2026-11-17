@@ -2,7 +2,7 @@
 // LITRATO (bahin 3 sa InspectionService): pag-add, pag-kuha ug pag-remove sa mga litrato.
 //   - ang file gi-copy sa "photos" folder tupad sa database
 //   - ang path gi-save sa table nga "attachment"
-//   - dili na ma-add o ma-remove kung COMPLETED na ang inspection
+//   - dili na ma-add o ma-remove kung LOCKED na ang inspection
 // =====================================================================
 using fsi_checklist.Data.Models;
 using Microsoft.EntityFrameworkCore;
@@ -26,9 +26,10 @@ public sealed partial class InspectionService
     {
         await using var db = await _database.OpenContextAsync();
 
-        string status = await db.Inspections.Where(i => i.Id == inspectionId).Select(i => i.Status).FirstAsync();
-        if (status != "DRAFT")
-            throw new InvalidOperationException("This inspection is completed. Photos can no longer be changed.");
+        // Pwede gihapon bisan na-Complete na; dili na kung LOCKED (Lock this inspection)
+        bool locked = await db.Inspections.Where(i => i.Id == inspectionId).Select(i => i.LockedAt != null).FirstAsync();
+        if (locked)
+            throw new InvalidOperationException("This inspection is locked. Photos can no longer be changed.");
 
         string id = NewId();
         string ext = Path.GetExtension(photo.FileName);
@@ -69,9 +70,10 @@ public sealed partial class InspectionService
         if (row == null)
             return;
 
-        string status = await db.Inspections.Where(i => i.Id == row.InspectionId).Select(i => i.Status).FirstAsync();
-        if (status != "DRAFT")
-            throw new InvalidOperationException("This inspection is completed. Photos can no longer be changed.");
+        // Pwede gihapon bisan na-Complete na; dili na kung LOCKED (Lock this inspection)
+        bool locked = await db.Inspections.Where(i => i.Id == row.InspectionId).Select(i => i.LockedAt != null).FirstAsync();
+        if (locked)
+            throw new InvalidOperationException("This inspection is locked. Photos can no longer be changed.");
 
         db.Attachments.Remove(row);
         await db.SaveChangesAsync();

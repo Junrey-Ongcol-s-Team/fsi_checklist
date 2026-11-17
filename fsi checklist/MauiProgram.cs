@@ -66,6 +66,8 @@ namespace fsi_checklist
             builder.Services.AddTransient<InspectionPage>();
             builder.Services.AddTransient<NewInspectionViewModel>();
             builder.Services.AddTransient<NewInspectionPage>();
+            builder.Services.AddTransient<EditDetailsViewModel>();   // Edit details (ngalan, address, contact ...)
+            builder.Services.AddTransient<EditDetailsPage>();
             builder.Services.AddTransient<DashboardPageViewModel>();
             builder.Services.AddTransient<DashboardPage>();
             builder.Services.AddTransient<ChecklistTypesViewModel>();

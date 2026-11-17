@@ -41,6 +41,10 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty] private string stationName = string.Empty;
     [ObservableProperty] private string stationAddress = string.Empty;
+    [ObservableProperty] private string stationRegion = string.Empty;    // letterhead: Region 10
+    [ObservableProperty] private string stationOffice = string.Empty;    // letterhead: Provincial Office
+    [ObservableProperty] private string stationEmail = string.Empty;     // letterhead
+    [ObservableProperty] private string stationHotline = string.Empty;   // letterhead
 
     [RelayCommand]
     public async Task LoadAsync()
@@ -49,6 +53,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             StationName = await _settings.GetAsync(AppSettingsService.StationName);
             StationAddress = await _settings.GetAsync(AppSettingsService.StationAddress);
+            StationRegion = await _settings.GetAsync(AppSettingsService.StationRegion);
+            StationOffice = await _settings.GetAsync(AppSettingsService.StationOffice);
+            StationEmail = await _settings.GetAsync(AppSettingsService.StationEmail);
+            StationHotline = await _settings.GetAsync(AppSettingsService.StationHotline);
 
             Presigns = (await _inspections.GetPresignsAsync())
                 .Select(p => new PresignRow
@@ -75,6 +83,10 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             await _settings.SetAsync(AppSettingsService.StationName, StationName.Trim());
             await _settings.SetAsync(AppSettingsService.StationAddress, StationAddress.Trim());
+            await _settings.SetAsync(AppSettingsService.StationRegion, StationRegion.Trim());
+            await _settings.SetAsync(AppSettingsService.StationOffice, StationOffice.Trim());
+            await _settings.SetAsync(AppSettingsService.StationEmail, StationEmail.Trim());
+            await _settings.SetAsync(AppSettingsService.StationHotline, StationHotline.Trim());
             await Dialogs.ShowAsync("Saved", "Settings saved.");
         }
         catch (Exception ex)

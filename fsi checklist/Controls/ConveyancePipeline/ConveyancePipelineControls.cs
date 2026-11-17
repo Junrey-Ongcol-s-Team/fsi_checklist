@@ -14,5 +14,6 @@ public static class ConveyancePipelineControls
         ["Number"] = typeof(ConveyancePipelineNumberField),
         ["Bool"] = typeof(ConveyancePipelineCheckItem),
         ["YesNo"] = typeof(ConveyancePipelineYesNoButtons),
+        ["Choice"] = typeof(ConveyancePipelineChoiceButtons),
     };
 }

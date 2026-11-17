@@ -19,6 +19,7 @@ namespace fsi_checklist
             Routing.RegisterRoute(nameof(SignaturePage), typeof(SignaturePage));
             Routing.RegisterRoute(nameof(ResultsPage), typeof(ResultsPage));
             Routing.RegisterRoute(nameof(NewInspectionPage), typeof(NewInspectionPage));
+            Routing.RegisterRoute(nameof(EditDetailsPage), typeof(EditDetailsPage));
             Routing.RegisterRoute(nameof(FormPage), typeof(FormPage));
             Routing.RegisterRoute(nameof(SettingsPage), typeof(SettingsPage));
         }

@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.FormPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:checklist="clr-namespace:fsi_checklist.Controls.ChecklistScreen"
     xmlns:views="clr-namespace:fsi_checklist.Views"
     xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
     xmlns:controls="clr-namespace:fsi_checklist.Controls"
@@ -307,8 +308,8 @@
 
                                     <!--  Take photo = camera, Choose photo = gallery / file  -->
                                     <HorizontalStackLayout Spacing="8">
-                                        <Button Clicked="OnTakePhotoClicked" FontSize="13" Text="Take photo" />
-                                        <Button Clicked="OnChoosePhotoClicked" FontSize="13" Text="Choose photo" />
+                                        <checklist:TakePhotoButton Clicked="OnTakePhotoClicked" />
+                                        <checklist:ChoosePhotoButton Clicked="OnChoosePhotoClicked" />
                                     </HorizontalStackLayout>
 
                                     <!--  Ang gagmay nga hulagway, uban ang Remove  -->
@@ -326,12 +327,7 @@
                                                             <TapGestureRecognizer Tapped="OnPhotoTapped" />
                                                         </Image.GestureRecognizers>
                                                     </Image>
-                                                    <Button
-                                                        Clicked="OnRemovePhotoClicked"
-                                                        FontSize="12"
-                                                        HeightRequest="32"
-                                                        Padding="8,0"
-                                                        Text="Remove" />
+                                                    <checklist:RemovePhotoButton Clicked="OnRemovePhotoClicked" />
                                                 </VerticalStackLayout>
                                             </DataTemplate>
                                         </BindableLayout.ItemTemplate>
@@ -411,12 +407,7 @@
                             BindableLayout.ItemsSource="{Binding Children}"
                             Spacing="10" />
                         <!--  DONE: sirad-an ang expander ug mobalik sa numero (dili na kinahanglan mo-scroll pataas)  -->
-                        <Button
-                            Command="{Binding CollapseCommand}"
-                            HorizontalOptions="End"
-                            Style="{StaticResource OutlineButton}"
-                            Text="Done  ▲"
-                            WidthRequest="120" />
+                        <checklist:DoneExpanderButton Command="{Binding CollapseCommand}" />
                     </VerticalStackLayout>
                 </uranium:ExpanderView>
             </Border>
@@ -474,23 +465,9 @@
                 <ProgressBar Progress="{Binding ProgressFraction}" ProgressColor="{Binding ProgressColor}" />
                 <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
                     <!--  Save draft = mobalik sa dashboard; Next missing = pangitaon ang kulang; Sign-off = pirma  -->
-                    <Button
-                        Command="{Binding SaveDraftCommand}"
-                        Style="{StaticResource OutlineButton}"
-                        Text="Save draft" />
-                    <Button
-                        Grid.Column="1"
-                        Command="{Binding NextMissingCommand}"
-                        Style="{StaticResource OutlineButton}"
-                        Text="Next missing" />
-                    <Button
-                        Grid.Column="2"
-                        Command="{Binding GoToSignoffCommand}"
-                        CornerRadius="12"
-                        FontAttributes="Bold"
-                        FontSize="13"
-                        HeightRequest="48"
-                        Text="Sign-off" />
+                    <checklist:SaveDraftButton Command="{Binding SaveDraftCommand}" />
+                    <checklist:NextMissingButton Grid.Column="1" Command="{Binding NextMissingCommand}" />
+                    <checklist:GoToSignoffButton Grid.Column="2" Command="{Binding GoToSignoffCommand}" />
                 </Grid>
             </VerticalStackLayout>
         </Border>

@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.NewInspectionPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:newinsp="clr-namespace:fsi_checklist.Controls.NewInspectionScreen"
     Title="New inspection">
 
     <ScrollView>
@@ -22,42 +23,31 @@
                 Text="{Binding SelectedTemplate.DisplayName}" />
 
             <Label FontSize="12" IsVisible="{Binding ShowPicker}" Text="Checklist" />
-            <Picker
-                Title="Choose a checklist"
-                IsVisible="{Binding ShowPicker}"
+            <newinsp:ChecklistPicker IsVisible="{Binding ShowPicker}"
                 ItemDisplayBinding="{Binding DisplayName}"
                 ItemsSource="{Binding Templates}"
                 SelectedItem="{Binding SelectedTemplate}" />
 
             <Label FontSize="12" Text="{Binding SubjectLabel}" />
-            <Entry Text="{Binding SubjectName}" />
+            <newinsp:EstablishmentNameField Text="{Binding SubjectName}" />
 
             <Label FontSize="12" Text="Address" />
-            <Entry Text="{Binding Address}" />
+            <newinsp:EstablishmentAddressField Text="{Binding Address}" />
 
             <Label FontSize="12" Text="Owner / representative" />
-            <Entry Text="{Binding OwnerName}" />
+            <newinsp:OwnerNameField Text="{Binding OwnerName}" />
 
             <!--  Contact number: numero ra, 11 ka numero (ang letra dili madawat)  -->
             <Label FontSize="12" Text="Contact number (11 digits)" />
-            <Entry
-                Keyboard="Telephone"
-                Placeholder="09XXXXXXXXX"
-                Text="{Binding ContactNo}" />
+            <newinsp:OwnerContactNumberField Text="{Binding ContactNo}" />
 
             <Label FontSize="12" Text="Inspection order / control no." />
-            <Entry Text="{Binding ReferenceNo}" />
+            <newinsp:InspectionOrderNumberField Text="{Binding ReferenceNo}" />
 
             <Label FontSize="12" Text="Date inspected" />
-            <DatePicker Date="{Binding DateInspected}" />
+            <newinsp:DateInspectedPicker Date="{Binding DateInspected}" />
 
-            <Button
-                Margin="0,12,0,0"
-                Command="{Binding CreateCommand}"
-                CornerRadius="12"
-                FontAttributes="Bold"
-                HeightRequest="52"
-                Text="Start inspection" />
+            <newinsp:StartInspectionButton Command="{Binding CreateCommand}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

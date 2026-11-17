@@ -2,7 +2,8 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>net10.0-android</TargetFrameworks>
-		<TargetFrameworks Condition="!$([MSBuild]::IsOSPlatform('linux'))">$(TargetFrameworks);net10.0-ios;net10.0-maccatalyst</TargetFrameworks>
+		<!-- iOS ug Mac (maccatalyst) GITANGTANG: dili gamiton (Android tablet ug Windows laptop ra).
+		     Mas paspas ug mas gaan ang build/Archive, ug dili na mo-fail tungod sa naka-lock nga maccatalyst dll. -->
 		<TargetFrameworks Condition="$([MSBuild]::IsOSPlatform('windows'))">$(TargetFrameworks);net10.0-windows10.0.19041.0</TargetFrameworks>
 
 		<!-- Note for MacCatalyst:
@@ -49,6 +50,9 @@
 		<AndroidEnableProfiledAot Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">false</AndroidEnableProfiledAot>
 		<!-- Para sa daan nga tablet/phone (32-bit ARM) ug bag-o (64-bit). Kung wala ang android-arm: "package appears to be invalid" sa daan nga tablet. -->
 		<RuntimeIdentifiers Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">android-arm;android-arm64</RuntimeIdentifiers>
+		<!-- MAS GAAN PA: limitahan ang RAM sa Java (R8/D8) ug sa aapt2 aron dili mo-hang o mo-restart ang laptop sa Publish/Archive. -->
+		<JavaMaximumHeapSize Condition="$(TargetFramework.Contains('-android')) And '$(Configuration)' == 'Release'">1G</JavaMaximumHeapSize>
+		<_AndroidAapt2DaemonMaxInstanceCount Condition="$(TargetFramework.Contains('-android'))">1</_AndroidAapt2DaemonMaxInstanceCount>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
@@ -77,7 +81,7 @@
 		<MauiFont Include="Resources\Fonts\*" />
 
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
-		<MauiAsset Include="Resources\Raw\**" Exclude="Resources\Raw\seeds\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		<MauiAsset Include="Resources\Raw\**" Exclude="Resources\Raw\seeds\**;Resources\Raw\AboutAssets.txt" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		<!-- Form seed scripts: always addressed as seeds/<name>.sql, whatever the platform path separator -->
 		<MauiAsset Include="Resources\Raw\seeds\*.sql" LogicalName="seeds/%(Filename)%(Extension)" />
 	</ItemGroup>

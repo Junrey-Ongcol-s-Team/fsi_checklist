@@ -733,6 +733,17 @@ public sealed partial class FormPageViewModel : ObservableObject
     //   068 Inspection during construction: I. hangtod VII. (tanang numero 1 hangtod 95)
     private static readonly HashSet<string> ExpanderEveryNumber = new()
     {
+        "building-plans.s.egress",              // 006 I. Means of egress (civil/architectural plan)
+        "building-plans.s.construction",        // 006 II.A Construction and compartmentation
+        "building-plans.s.fire_doors",          // 006 II.B Fire doors
+        "building-plans.s.vertical",            // 006 II.C Protection of vertical opening
+        "building-plans.s.warnings",            // 006 III. Warnings (signs, lighting, exit signage)
+        "building-plans.s.suppression",         // 006 IV.A Automatic fire suppression system
+        "building-plans.s.standpipe",           // 006 IV.B Wet standpipe system
+        "building-plans.s.detection",           // 006 IV.C Fire detection and alarm system
+        "building-plans.s.extinguishers",       // 006 IV.D Portable fire extinguisher
+        "building-plans.s.services",            // 006 V. Building service equipment
+        "building-plans.s.other",               // 006 VI. Other fire safety requirements
         "during-construction.s.egress",         // 068 I. Means of egress
         "during-construction.s.construction",   // 068 II.A Construction and compartmentation
         "during-construction.s.fire_doors",     // 068 II.B Fire doors
@@ -789,6 +800,27 @@ public sealed partial class FormPageViewModel : ObservableObject
         "fsic-new-occupancy.fp_chutes.grp",        // 061 Fire protection: J.4 Chutes / incinerators
         "fsic-new-occupancy.fp_firewall.grp",      // 061 Fire protection: K. Fire wall
         "during-construction.general",             // 068 General information (Stage of inspection, FSEC ...)
+        "dwelling.nature",                         // 021 Nature of inspection conducted (usa ra)
+        "gasoline-station.nature",                 // 026 Nature of inspection conducted (usa ra)
+        "gasoline-station.general.grp",            // 026 General information
+        "gasoline-station.tanks.grp",              // 026 Underground tanks
+        "gasoline-station.tank1.grp",              // 026 Underground tank 1
+        "gasoline-station.tank2.grp",              // 026 Underground tank 2
+        "gasoline-station.tank3.grp",              // 026 Underground tank 3
+        "gasoline-station.vent1.grp",              // 026 Vent pipe 1
+        "gasoline-station.vent2.grp",              // 026 Vent pipe 2
+        "gasoline-station.vent3.grp",              // 026 Vent pipe 3
+        "gasoline-station.pump1.grp",              // 026 Pump (dispensing unit) 1
+        "gasoline-station.pump2.grp",              // 026 Pump (dispensing unit) 2
+        "gasoline-station.pump3.grp",              // 026 Pump (dispensing unit) 3
+        "gasoline-station.pump4.grp",              // 026 Pump (dispensing unit) 4
+        "gasoline-station.emergency_lights.grp",   // 026 Emergency lights
+        "gasoline-station.signs.grp",              // 026 Warning / safety signs
+        "gasoline-station.extinguishers.grp",      // 026 First aid fire protection equipment
+        "gasoline-station.other_features.grp",     // 026 Other fire safety features
+        "building-plans.general.grp",              // 006 General information
+        "building-plans.recommendation.grp",       // 006 VII. Recommendations
+        "building-plans.fees.grp",                 // 006 Fire code fees
         "fsic-renewal.nature",                     // 069 Nature of inspection conducted (usa ra ang mapili)
         "small-business.nature.grp",               // 024 II. Nature of inspection conducted
         "small-business.other_info.grp",           // 024 IV. Other information (sulod: Type of Occupancy, Construction Type ...)
@@ -799,6 +831,13 @@ public sealed partial class FormPageViewModel : ObservableObject
         "small-business.fp.a",                     // 024 VIII. Fire protection: A. First aid fire protection (Fire extinguishers)
         "small-business.fp.b",                     // 024 VIII. Fire protection: B. Emergency lighting systems
         "small-business.fp.c",                     // 024 VIII. Fire protection: C. Fire detection and alarm
+        "conveyance-pipeline.tests.grp",           // 075 Test records
+        "conveyance-pipeline.identification.grp",  // 075 Field identification
+        "conveyance-pipeline.corrosion.grp",       // 075 Corrosion
+        "conveyance-pipeline.support.grp",         // 075 Pipe support
+        "conveyance-pipeline.leaks.grp",           // 075 Leaks
+        "conveyance-pipeline.vibration.grp",       // 075 Vibration
+        "conveyance-pipeline.insulation.grp",      // 075 Insulation
     };
 
     // N/A BUTTON: mga TEXT nga pangutana nga naay "N/A" tapad sa sulatanan (tanang forms nga naa niini).
@@ -808,13 +847,20 @@ public sealed partial class FormPageViewModel : ObservableObject
         "insurance_policy_no",   // Fire Insurance Policy No. (if any)
     };
 
-    // N/A BUTTON sa usa ra ka form (dili tanan): ang date issued mawala kung N/A (seeds/024d.sql)
+    // N/A BUTTON sa usa ra ka form (dili tanan): ang date issued mawala kung N/A (seeds/024d.sql, 026c.sql)
     private static readonly HashSet<string> NaTextItems = new()
     {
         "small-business.fsec_no",               // 024 FSEC No.
         "small-business.renovation_permit_no",  // 024 Building/Renovation Permit
         "small-business.fsic_no",               // 024 FSIC No. (Latest)
         "small-business.business_permit_no",    // 024 Business Permit No.
+        "gasoline-station.building_permit_no",   // 026 Building Permit No
+        "gasoline-station.occupancy_permit_no",  // 026 Occupancy Permit No.
+        "gasoline-station.fsic_no",              // 026 Latest FSIC Issued Control No.
+        "gasoline-station.ntcv_no",              // 026 Latest Notice to Correct Violations Control No.
+        "gasoline-station.business_permit_no",   // 026 Latest Mayor's/Bus. Permit
+        "gasoline-station.municipal_license_no", // 026 Municipal License No.
+        "gasoline-station.electrical_no",        // 026 Latest Certificate of Electrical Inspection No.
     };
 
     // PICKER: mga CHOICE nga dropdown ang hitsura (dili chips), para sa taas nga listahan.

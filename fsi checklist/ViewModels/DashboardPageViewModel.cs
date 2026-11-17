@@ -13,7 +13,7 @@ using fsi_checklist.Views;
 namespace fsi_checklist.ViewModels;
 
 /// <summary>One inspection card on the dashboard.</summary>
-public sealed class DashboardRow
+public sealed partial class DashboardRow : ObservableObject
 {
     private static readonly Color Green = Color.FromArgb("#2E7D32");
     private static readonly Color Yellow = Color.FromArgb("#F9A825");
@@ -75,6 +75,14 @@ public sealed class DashboardRow
     public string ProgressText { get; }
     public bool FormIsFinished { get; }
     public bool IsLocked { get; }
+
+    // SELECT (para sa Export): makita ang checkbox kung IsSelecting; IsSelected = gi-tick
+    [ObservableProperty] private bool isSelecting;
+    [ObservableProperty] private bool isSelected;
+
+    // Ma-tawag kung gi-tick o gi-untick (para ma-update ang "Export (n)")
+    public event Action? SelectionChanged;
+    partial void OnIsSelectedChanged(bool value) => SelectionChanged?.Invoke();
     public bool CanEdit => !IsLocked;   // "Edit entries" makita ra kung dili locked
     public string SearchBlob { get; }
     public bool CanDelete => State is InspectionState.Draft or InspectionState.MissingSignature;
@@ -84,11 +92,13 @@ public sealed class DashboardRow
 public sealed partial class DashboardPageViewModel : ObservableObject
 {
     private readonly InspectionService _inspections;
+    private readonly PrintService _print;   // para sa PDF sulod sa Export
     private List<DashboardRow> _all = new();
 
-    public DashboardPageViewModel(InspectionService inspections)
+    public DashboardPageViewModel(InspectionService inspections, PrintService print)
     {
         _inspections = inspections;
+        _print = print;
     }
 
     public ObservableCollection<DashboardRow> Items { get; } = new();
@@ -157,6 +167,12 @@ public sealed partial class DashboardPageViewModel : ObservableObject
             Completed = data.Completed;
             AwaitingApproval = data.AwaitingApproval;
             _all = data.Items.Select(i => new DashboardRow(i)).ToList();
+            foreach (var row in _all)
+            {
+                row.IsSelecting = IsSelecting;
+                row.SelectionChanged += UpdateExportText;
+            }
+            UpdateExportText();
             ApplyFilter();
         }
         catch (Exception ex)
@@ -219,8 +235,8 @@ public sealed partial class DashboardPageViewModel : ObservableObject
         await Nav.GoAsync(route);
     }
 
-    // EDIT ENTRIES button sa card: ablihan dayon ang form aron usbon ang tubag.
-    // Pwede KANUNAY (bisan na-Complete ug naka-pirma na ang Chief FSES ug Fire Marshal), gawas kung LOCKED.
+    // EDIT button sa card (usa ra): STEP 1 = detalye (ngalan, address, owner, contact number, IO no., petsa),
+    // STEP 2 = ang form (entries). Pwede KANUNAY (bisan na-Complete ug naka-pirma na), gawas kung LOCKED.
     [RelayCommand]
     private async Task EditAsync(DashboardRow? row)
     {
@@ -235,7 +251,7 @@ public sealed partial class DashboardPageViewModel : ObservableObject
                 return;
             }
 
-            await Nav.GoAsync($"{nameof(FormPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
+            await Nav.GoAsync($"{nameof(EditDetailsPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
         }
         catch (Exception ex)
         {
@@ -296,4 +312,110 @@ public sealed partial class DashboardPageViewModel : ObservableObject
 
     [RelayCommand]
     private Task NewInspectionAsync() => Nav.GoAsync(nameof(ChecklistTypesPage));
+
+    // ----- SELECT + EXPORT / IMPORT ---------------------------------------------
+    // "Select" -> mogawas ang checkbox sa matag card -> i-tick -> "Export (n)" -> .zip -> Share.
+    // "Import" -> pilion ang .zip gikan sa laing tablet -> i-add ang mga inspection.
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotSelecting))]
+    private bool isSelecting;
+
+    public bool IsNotSelecting => !IsSelecting;
+
+    [ObservableProperty]
+    private string exportText = "Export (0)";
+
+    partial void OnIsSelectingChanged(bool value)
+    {
+        foreach (var row in _all)
+        {
+            row.IsSelecting = value;
+            if (!value)
+                row.IsSelected = false;
+        }
+        UpdateExportText();
+    }
+
+    private void UpdateExportText() => ExportText = $"Export ({_all.Count(r => r.IsSelected)})";
+
+    // Pag-tap sa card samtang "Select" mode: i-tick / i-untick (dili ablihan)
+    public void ToggleRow(DashboardRow row) => row.IsSelected = !row.IsSelected;
+
+    [RelayCommand]
+    private void StartSelect() => IsSelecting = true;
+
+    [RelayCommand]
+    private void CancelSelect() => IsSelecting = false;
+
+    // Select all: i-tick tanan nga makita; kung naka-tick na tanan, tangtangon tanan
+    [RelayCommand]
+    private void SelectAll()
+    {
+        bool all = Items.Count > 0 && Items.All(r => r.IsSelected);
+        foreach (var row in Items)
+            row.IsSelected = !all;
+    }
+
+    [RelayCommand]
+    private async Task ExportAsync()
+    {
+        var ids = _all.Where(r => r.IsSelected).Select(r => r.Id).ToList();
+        if (ids.Count == 0)
+        {
+            await Dialogs.ShowAsync("Nothing selected", "Tick at least one inspection to export.");
+            return;
+        }
+        try
+        {
+            var export = await _inspections.ExportBundleAsync(ids, _print.BuildPdfAsync);
+            IsSelecting = false;
+
+            // Asa na-save (aron makit-an sa ulahi), dayon SHARE: Messenger, Gmail, Drive, Bluetooth ...
+            string where = export.SavedTo != null
+                ? $"Saved in {export.SavedTo}:\n{export.FileName}\n\nNext, choose where to send it (Messenger, Gmail, Drive ...)."
+                : $"{export.FileName}\n\nNext, choose where to send it (Messenger, Gmail, Drive ...).";
+            await Dialogs.ShowAsync($"Exported {ids.Count} inspection(s)", where);
+
+            await Microsoft.Maui.ApplicationModel.DataTransfer.Share.Default.RequestAsync(new ShareFileRequest
+            {
+                Title = $"Send {ids.Count} inspection(s)",
+                File = new ShareFile(export.FilePath, "application/zip"),
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            await Dialogs.ShowAsync("Couldn't export", AppLog.Describe(ex));
+        }
+    }
+
+    [RelayCommand]
+    private async Task ImportAsync()
+    {
+        try
+        {
+            var file = await Microsoft.Maui.Storage.FilePicker.Default.PickAsync(new PickOptions
+            {
+                PickerTitle = "Choose an FSI export (.zip) from Downloads, Messenger, Gmail or Drive",
+            });
+            if (file == null)
+                return;
+
+            ImportResult result;
+            await using (var stream = await file.OpenReadAsync())
+                result = await _inspections.ImportBundleAsync(stream);
+
+            string message = $"{result.Imported} inspection(s) added.";
+            if (result.Skipped > 0)
+                message += $"\n\n{result.Skipped} skipped:\n\u2022 " + string.Join("\n\u2022 ", result.Notes);
+            await Dialogs.ShowAsync("Import finished", message);
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            await Dialogs.ShowAsync("Couldn't import", AppLog.Describe(ex));
+        }
+    }
 }

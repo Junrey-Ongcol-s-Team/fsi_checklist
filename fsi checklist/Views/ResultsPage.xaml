@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.ResultsPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:results="clr-namespace:fsi_checklist.Controls.ResultsScreen"
     xmlns:uranium="http://schemas.enisn-projects.io/dotnet/maui/uraniumui"
     Title="Results">
 
@@ -88,14 +89,7 @@
                 Text="{Binding StatusText}" />
 
             <!--  PRINT: pun-on ang BFP form ug ablihan para i-print. Mogana ra kung COMPLETED ug walay kulang.  -->
-            <Button
-                Margin="0,8,0,0"
-                Command="{Binding PrintCommand}"
-                CornerRadius="12"
-                FontAttributes="Bold"
-                HeightRequest="48"
-                IsEnabled="{Binding CanPrint}"
-                Text="Print form" />
+            <results:PrintFormButton Command="{Binding PrintCommand}" IsEnabled="{Binding CanPrint}" />
             <Label
                 FontSize="12"
                 IsVisible="{Binding HasPrintHint}"

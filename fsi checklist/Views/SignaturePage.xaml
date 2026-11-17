@@ -6,6 +6,7 @@
     x:Class="fsi_checklist.Views.SignaturePage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:sign="clr-namespace:fsi_checklist.Controls.SignatureScreen"
     Title="Sign">
 
     <ContentPage.Resources>
@@ -55,36 +56,12 @@
             </Border>
 
             <Label FontSize="12" Text="Printed name" />
-            <Entry Placeholder="Full name" Text="{Binding PrintedName}" />
+            <sign:PrintedNameField Text="{Binding PrintedName}" />
 
             <!--  Approved / Disapproved: makita ra para sa Fire Marshal  -->
             <HorizontalStackLayout IsVisible="{Binding NeedsDecision}" Spacing="8">
-                <Button
-                    Command="{Binding SetDecisionCommand}"
-                    CommandParameter="APPROVED"
-                    Style="{StaticResource ChipStyle}"
-                    Text="Approved">
-                    <Button.Triggers>
-                        <DataTrigger Binding="{Binding Decision}" TargetType="Button" Value="APPROVED">
-                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="BorderColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor" Value="White" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
-                <Button
-                    Command="{Binding SetDecisionCommand}"
-                    CommandParameter="DISAPPROVED"
-                    Style="{StaticResource ChipStyle}"
-                    Text="Disapproved">
-                    <Button.Triggers>
-                        <DataTrigger Binding="{Binding Decision}" TargetType="Button" Value="DISAPPROVED">
-                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                            <Setter Property="BorderColor" Value="{StaticResource Primary}" />
-                            <Setter Property="TextColor" Value="White" />
-                        </DataTrigger>
-                    </Button.Triggers>
-                </Button>
+                <sign:ApprovedButton Command="{Binding SetDecisionCommand}" />
+                <sign:DisapprovedButton Command="{Binding SetDecisionCommand}" />
             </HorizontalStackLayout>
 
             <!--  PRE-SIGNED: kung naa nay saved nga pirma sa Settings, i-tap lang ni (dili na mag-drawing)  -->
@@ -93,11 +70,7 @@
                 <Border Stroke="#BDBDBD" StrokeShape="RoundRectangle 8">
                     <GraphicsView Drawable="{Binding SavedPreview}" HeightRequest="70" />
                 </Border>
-                <Button
-                    Command="{Binding UseSavedCommand}"
-                    HeightRequest="48"
-                    IsEnabled="{Binding CanSave}"
-                    Text="Use saved signature" />
+                <sign:UseSavedSignatureButton Command="{Binding UseSavedCommand}" IsEnabled="{Binding CanSave}" />
                 <Label FontSize="12" Text="Or sign again below:" />
             </VerticalStackLayout>
 
@@ -129,19 +102,9 @@
             Grid.Row="4"
             ColumnDefinitions="*,*,*"
             ColumnSpacing="8">
-            <Button
-                Grid.Column="0"
-                Clicked="OnClear"
-                Text="Clear" />
-            <Button
-                Grid.Column="1"
-                Command="{Binding CancelCommand}"
-                Text="Cancel" />
-            <Button
-                Grid.Column="2"
-                Clicked="OnSave"
-                IsEnabled="{Binding CanSave}"
-                Text="Save signature" />
+            <sign:ClearSignatureButton Grid.Column="0" Clicked="OnClear" />
+            <sign:CancelSignatureButton Grid.Column="1" Command="{Binding CancelCommand}" />
+            <sign:SaveSignatureButton Grid.Column="2" Clicked="OnSave" IsEnabled="{Binding CanSave}" />
         </Grid>
     </Grid>
 </ContentPage>

@@ -15,5 +15,6 @@ public static class BuildingPlansControls
         ["Date"] = typeof(BuildingPlansDateField),
         ["Bool"] = typeof(BuildingPlansCheckItem),
         ["YesNo"] = typeof(BuildingPlansYesNoButtons),
+        ["Choice"] = typeof(BuildingPlansChoiceButtons),
     };
 }

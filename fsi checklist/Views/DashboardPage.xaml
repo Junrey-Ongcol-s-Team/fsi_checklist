@@ -156,11 +156,17 @@
                                     ColumnDefinitions="*,Auto"
                                     RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
                                     RowSpacing="3">
-                                    <Label
-                                        FontAttributes="Bold"
-                                        FontSize="16"
-                                        LineBreakMode="TailTruncation"
-                                        Text="{Binding Title}" />
+                                    <!--  Checkbox (Select mode, para sa Export) + ngalan sa owner  -->
+                                    <Grid ColumnDefinitions="Auto,*">
+                                        <dash:SelectInspectionCheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" IsVisible="{Binding IsSelecting}" />
+                                        <Label
+                                            Grid.Column="1"
+                                            FontAttributes="Bold"
+                                            FontSize="16"
+                                            LineBreakMode="TailTruncation"
+                                            Text="{Binding Title}"
+                                            VerticalOptions="Center" />
+                                    </Grid>
                                     <Border
                                         Grid.Column="1"
                                         Padding="9,3"
@@ -197,7 +203,7 @@
                                         Text="{Binding ProgressText}"
                                         TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}" />
                                     <!--  3 KA BUTTON (kaugalingong controls sa Controls/Dashboard):  -->
-                                    <!--  View result | Edit entries | Lock this inspection  -->
+                                    <!--  View result | Edit (details, dayon entries) | Lock this inspection  -->
                                     <FlexLayout
                                         Grid.Row="5"
                                         Grid.ColumnSpan="2"
@@ -227,14 +233,19 @@
             TextColor="{AppThemeBinding Light=#616161, Dark=#B0B0B0}"
             VerticalOptions="Center" />
 
-        <!--  Button sa bag-ong inspection  -->
-        <Button
-            Grid.Row="3"
-            Margin="16,8,16,16"
-            Command="{Binding NewInspectionCommand}"
-            CornerRadius="12"
-            FontAttributes="Bold"
-            HeightRequest="52"
-            Text="+  New inspection" />
+        <!--  UBOS (tanan kaugalingong controls): normal = Select | Import | + New inspection;  Select mode = Cancel | Select all | Export (n)  -->
+        <!--  (kaugalingong controls sa Controls/Dashboard)  -->
+        <Grid Grid.Row="3" Margin="16,8,16,16">
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8" IsVisible="{Binding IsNotSelecting}">
+                <dash:SelectInspectionsButton Command="{Binding StartSelectCommand}" />
+                <dash:ImportBundleButton Grid.Column="1" Command="{Binding ImportCommand}" />
+                <dash:NewInspectionButton Grid.Column="2" Command="{Binding NewInspectionCommand}" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8" IsVisible="{Binding IsSelecting}">
+                <dash:CancelSelectButton Command="{Binding CancelSelectCommand}" />
+                <dash:SelectAllButton Grid.Column="1" Command="{Binding SelectAllCommand}" />
+                <dash:ExportBundleButton Grid.Column="2" Command="{Binding ExportCommand}" Text="{Binding ExportText}" />
+            </Grid>
+        </Grid>
     </Grid>
 </ContentPage>

@@ -30,6 +30,14 @@ internal static class FieldParts
             ? color
             : Color.FromArgb("#512BD4");
 
+    // Ang naandan nga hitsura sa app (Resources/Styles/Styles.xaml) para sa control nga naay
+    // kaugalingong ngalan. Pananglitan: FieldParts.AppLook(this, typeof(Button));
+    public static void AppLook(VisualElement control, Type baseType)
+    {
+        if (Application.Current?.Resources.TryGetValue(baseType.FullName!, out var value) == true && value is Style style)
+            control.Style = style;
+    }
+
     // Gamay nga label sa ibabaw sa kahon (pananglitan "Date issued")
     public static Label Caption()
     {

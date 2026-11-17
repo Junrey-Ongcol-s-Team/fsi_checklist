@@ -19,8 +19,15 @@ public partial class DashboardPage : ContentPage
     private async void OnCardTapped(object? sender, TappedEventArgs e)
     {
         var row = e.Parameter as DashboardRow ?? (sender as BindableObject)?.BindingContext as DashboardRow;
-        if (row != null)
-            await _viewModel.OpenCommand.ExecuteAsync(row);
+        if (row == null)
+            return;
+        // "Select" mode: i-tick / i-untick ra (para sa Export), dili ablihan
+        if (_viewModel.IsSelecting)
+        {
+            _viewModel.ToggleRow(row);
+            return;
+        }
+        await _viewModel.OpenCommand.ExecuteAsync(row);
     }
 
     // VIEW RESULT button sa card: ablihan ang Results page para niini nga inspection.
@@ -30,7 +37,7 @@ public partial class DashboardPage : ContentPage
             await fsi_checklist.Services.Nav.GoAsync($"{nameof(ResultsPage)}?inspectionId={Uri.EscapeDataString(row.Id)}");
     }
 
-    // EDIT ENTRIES button sa card (pwede kanunay gawas kung locked).
+    // EDIT button sa card: detalye una, dayon ang entries (pwede kanunay gawas kung locked).
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         if ((sender as BindableObject)?.BindingContext is DashboardRow row)

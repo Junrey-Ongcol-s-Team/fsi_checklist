@@ -18,5 +18,6 @@ public static class FsicRenewalControls
         ["Choice"] = typeof(FsicRenewalChoiceButtons),
         ["Chips"] = typeof(FsicRenewalClearanceChips),
         ["Picker"] = typeof(FsicRenewalOccupancyPicker),
+        ["NaToggle"] = typeof(FsicRenewalNaButton),
     };
 }

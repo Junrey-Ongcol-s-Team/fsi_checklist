@@ -65,13 +65,21 @@ public sealed class DatabaseService
         new("seeds/na_rule.sql", "seed.na_rule", 1),   // N/A: itago ang Capacity ug uban pa kung N/A ang parent
         new("seeds/lock.sql", "seed.lock", 1),   // Lock this inspection: Edit pwede bisan Completed; LOCKED ra ang dili na ma-usab
         new("seeds/061m.sql", "seed.061m", 1),   // New FSIC/occupancy: Residential sub classification = picker (5 ka pilian)
-        new("seeds/024c.sql", "seed.024c", 1),
-        new("seeds/024d.sql", "seed.024d", 1),
+        new("seeds/024c.sql", "seed.024c", 1),   // Small business: Type of occupancy ug Construction type = usa ra; Others (specify) sulod
+        new("seeds/024d.sql", "seed.024d", 1),   // Small business: N/A sa FSEC, Building/Renovation Permit, FSIC No., Business Permit No. (date = N/A)
         new("seeds/024e.sql", "seed.024e", 1),   // Small business: II, IV, V (A, B), VI, VII, VIII = ExpanderView
         new("seeds/024f.sql", "seed.024f", 1),   // Small business: II. Nature of inspection = usa ra ang mapili
-        new("seeds/024g.sql", "seed.024g", 1),
+        new("seeds/024g.sql", "seed.024g", 1),   // Small business: Verification -> NTC / NTCV / Abatement / Closure = usa ra
         new("seeds/024h.sql", "seed.024h", 1),   // Small business: VIII. Fire protection = A., B., C. expander
-        new("seeds/024i.sql", "seed.024i", 1),   // Small business: [ ] For issuance of -> usa ra ang mapili sa 6   // Small business: Verification -> NTC / NTCV / Abatement / Closure = usa ra   // Small business: N/A sa FSEC, Building/Renovation Permit, FSIC No., Business Permit No. (date = N/A)   // Small business: Type of occupancy ug Construction type = usa ra + expander; Others (specify) sulod
+        new("seeds/024i.sql", "seed.024i", 1),   // Small business: [ ] For issuance of -> usa ra ang mapili sa 6
+        new("seeds/075c.sql", "seed.075c", 1),   // Pipelines: Test records, Field identification, Corrosion ... Insulation = ExpanderView
+        new("seeds/075d.sql", "seed.075d", 1),   // Pipelines: Recommendations = usa ra (Conveyance Clearance / Notice of Disapproval)
+        new("seeds/006b.sql", "seed.006b", 1),   // Building plans: tanang seksyon = ExpanderView (General, VII, Fees = usa matag usa)
+        new("seeds/nature2.sql", "seed.nature2", 1),   // 021 ug 026: Nature of inspection = expander + usa ra ang mapili
+        new("seeds/026b.sql", "seed.026b", 1),   // Gasoline station: matag seksyon = ExpanderView
+        new("seeds/026c.sql", "seed.026c", 1),   // Gasoline station: N/A sa Building/Occupancy Permit, FSIC, NTCV, Bus. Permit, License, Electrical (date = N/A)
+        new("seeds/069h.sql", "seed.069h", 1),   // FSIC renewal: N/A button sa matag numero 1-13 (assessment)
+        new("seeds/station_defaults.sql", "seed.station_defaults", 1),   // Letterhead: default nga Tangub City Fire Station (kung blangko ang Settings)
     ];
 
     private readonly IDbContextFactory<AppDbContext> _contextFactory;
